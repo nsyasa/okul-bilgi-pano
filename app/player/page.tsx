@@ -64,6 +64,8 @@ export default function PlayerPage() {
   const [mode, setMode] = useState<"video" | "image" | "text">("text");
 
   const [isOffline, setIsOffline] = useState(false);
+  const [cacheTimestamp, setCacheTimestamp] = useState<number | null>(null);
+  const [isCacheStale, setIsCacheStale] = useState(false);
 
   // Health state for watchdog/self-recovery
   const [lastSuccessfulFetchAt, setLastSuccessfulFetchAt] = useState<number>(Date.now());
@@ -104,8 +106,13 @@ export default function PlayerPage() {
         setConsecutiveFetchFailures(0);
         setLastError(null);
         setShowConnectionOverlay(false);
+        setIsOffline(false);
+        setCacheTimestamp(null);
+        setIsCacheStale(false);
       } else {
         setIsOffline(true);
+        if (r.cacheTimestamp) setCacheTimestamp(r.cacheTimestamp);
+        if (r.isStale) setIsCacheStale(true);
       }
     } catch (err) {
       setConsecutiveFetchFailures((prev) => prev + 1);
@@ -461,6 +468,25 @@ export default function PlayerPage() {
             <div className="text-lg opacity-80">Yeniden deneniyor...</div>
             {lastError && <div className="text-sm mt-4 opacity-60">{lastError}</div>}
           </div>
+        </div>
+      )}
+
+      {/* Offline cache mode indicator */}
+      {fromCache && !showConnectionOverlay && (
+        <div className="fixed top-4 right-4 z-40 px-4 py-2 rounded-lg text-sm"
+          style={{ background: isCacheStale ? "#dc2626" : "#f59e0b", color: "white" }}>
+          <div className="flex items-center gap-2">
+            <span>📡</span>
+            <span>Çevrimdışı Mod</span>
+          </div>
+          {cacheTimestamp && (
+            <div className="text-xs opacity-80 mt-1">
+              Son güncelleme: {new Date(cacheTimestamp).toLocaleString("tr-TR")}
+            </div>
+          )}
+          {isCacheStale && (
+            <div className="text-xs mt-1">⚠️ Veri 24 saatten eski</div>
+          )}
         </div>
       )}
       <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.topPadding}`}>

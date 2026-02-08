@@ -82,7 +82,12 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
   return [];
 }
 
-export async function fetchPlayerBundle(): Promise<{ bundle: PlayerBundle; fromCache: boolean }> {
+export async function fetchPlayerBundle(): Promise<{
+  bundle: PlayerBundle;
+  fromCache: boolean;
+  cacheTimestamp?: number;
+  isStale?: boolean;
+}> {
   const sb = supabasePlayer();
   const now = new Date();
   const dateKey = todayKeyTR(now);
@@ -172,7 +177,14 @@ export async function fetchPlayerBundle(): Promise<{ bundle: PlayerBundle; fromC
     return { bundle, fromCache: false };
   } catch {
     const cached = loadCache<PlayerBundle>(CACHE_KEY);
-    if (cached?.value) return { bundle: cached.value, fromCache: true };
+    if (cached?.value) {
+      return {
+        bundle: cached.value,
+        fromCache: true,
+        cacheTimestamp: cached.ts,
+        isStale: cached.isStale,
+      };
+    }
     return {
       bundle: {
         generatedAt: Date.now(),
