@@ -32,6 +32,14 @@ export type DutyTeacher = {
   note: string | null;
 };
 
+// Haftalık nöbet şablonu için
+export type DutyTemplateEntry = {
+  id: string;
+  day_of_week: number; // 1=Pazartesi, 5=Cuma
+  area: string;
+  teacher_name: string;
+};
+
 export type TickerItem = {
   id: string;
   text: string;
@@ -114,6 +122,7 @@ export type PlayerBundle = {
   announcements: Announcement[];
   events: EventItem[];
   duties: DutyTeacher[];
+  dutyTemplates: DutyTemplateEntry[];
   ticker: TickerItem[];
   youtubeVideos: YouTubeVideo[];
   settings?: { rotation?: PlayerRotationSettings };

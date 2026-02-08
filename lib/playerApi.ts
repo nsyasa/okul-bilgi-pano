@@ -11,9 +11,10 @@ function todayKeyTR(now: Date) {
 
 /**
  * Bugünün nöbetçi öğretmenlerini çeker.
- * Sadece bugünün verisi gösterilir.
+ * Önce bugüne özel kayıt var mı bakar, yoksa haftalık şablondan alır.
  */
-async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
+async function fetchDutyTeachers(sb: any, dateKey: string, weekday: number): Promise<any[]> {
+  // 1. Önce bugüne özel kayıt var mı kontrol et
   const { data: todayDuties, error: todayErr } = await sb
     .from("duty_teachers")
     .select("*")
@@ -22,7 +23,37 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
 
   if (todayErr) throw todayErr;
 
-  return todayDuties || [];
+  if (todayDuties && todayDuties.length > 0) {
+    return todayDuties;
+  }
+
+  // 2. Bugüne özel yoksa, haftalık şablondan al
+  // weekday: JS getDay() -> 0=Pazar, 1=Pazartesi... 6=Cumartesi
+  // duty_templates day_of_week: 1=Pazartesi, 5=Cuma
+  if (weekday >= 1 && weekday <= 5) {
+    const { data: templateDuties, error: templateErr } = await sb
+      .from("duty_templates")
+      .select("*")
+      .eq("day_of_week", weekday)
+      .order("area", { ascending: true });
+
+    if (templateErr) {
+      // Tablo yoksa veya hata olursa sessizce devam et
+      console.warn("duty_templates sorgu hatası:", templateErr.message);
+      return [];
+    }
+
+    // Şablonu DutyTeacher formatına çevir
+    return (templateDuties || []).map((t: any) => ({
+      id: t.id,
+      date: dateKey,
+      name: t.teacher_name,
+      area: t.area,
+      note: null,
+    }));
+  }
+
+  return [];
 }
 
 export async function fetchPlayerBundle(): Promise<{
@@ -35,8 +66,12 @@ export async function fetchPlayerBundle(): Promise<{
   const now = new Date();
   const dateKey = todayKeyTR(now);
 
+  // Türkiye saati ile haftanın gününü al
+  const trNow = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
+  const weekday = trNow.getDay();
+
   try {
-    const [ann, ev, tick, temp, over, info, spec, yt, settings, lessonSched] = await Promise.all([
+    const [ann, ev, tick, temp, over, info, spec, yt, settings, lessonSched, dutyTemp] = await Promise.all([
       sb
         .from("announcements")
         .select("*")
@@ -94,10 +129,16 @@ export async function fetchPlayerBundle(): Promise<{
         .select("*")
         .order("teacher_name", { ascending: true })
         .limit(1000),
+      sb
+        .from("duty_templates")
+        .select("*")
+        .order("day_of_week", { ascending: true })
+        .order("area", { ascending: true })
+        .limit(100),
     ]);
 
-    // Nöbetçi öğretmenleri özel fonksiyonla çek (otomatik tekrar mantığı ile)
-    const duties = await fetchDutyTeachers(sb, dateKey);
+    // Nöbetçi öğretmenleri özel fonksiyonla çek
+    const duties = await fetchDutyTeachers(sb, dateKey, weekday);
 
     const anyErr = ann.error || ev.error || tick.error || temp.error || over.error || info.error || spec.error || yt.error || settings.error;
     if (anyErr) throw anyErr;
@@ -112,6 +153,7 @@ export async function fetchPlayerBundle(): Promise<{
       announcements: (ann.data ?? []) as any,
       events: (ev.data ?? []) as any,
       duties: duties as any,
+      dutyTemplates: (dutyTemp.data ?? []) as any,
       ticker: (tick.data ?? []) as any,
       youtubeVideos: (yt.data ?? []) as any,
       settings: settingsMap as any,
@@ -140,6 +182,7 @@ export async function fetchPlayerBundle(): Promise<{
         announcements: [],
         events: [],
         duties: [],
+        dutyTemplates: [],
         ticker: [],
         youtubeVideos: [],
         settings: {},
