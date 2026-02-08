@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BRAND } from "@/lib/branding";
 import { PLAYER_LAYOUT } from "@/lib/layoutConfig";
 import { fetchPlayerBundle } from "@/lib/playerApi";
@@ -13,11 +13,29 @@ import { TickerBar } from "@/components/player/TickerBar";
 import { AnnouncementSidebar } from "@/components/player/AnnouncementSidebar";
 import type { PlayerBundle, WeatherNow, YouTubeVideo, PlayerRotationSettings, Announcement } from "@/types/player";
 
-function useInterval(fn: () => void, ms: number) {
+const DEBUG = false;
+
+function useInterval(fn: () => void, ms: number | null) {
+  const savedCallback = useRef<(() => void) | null>(null);
+
+  // Remember the latest callback
   useEffect(() => {
-    const id = setInterval(fn, ms);
+    savedCallback.current = fn;
+  }, [fn]);
+
+  // Set up the interval
+  useEffect(() => {
+    if (ms === null) return;
+
+    const tick = () => {
+      if (savedCallback.current) {
+        savedCallback.current();
+      }
+    };
+
+    const id = setInterval(tick, ms);
     return () => clearInterval(id);
-  }, [fn, ms]);
+  }, [ms]);
 }
 
 function todayKeyTR(now: Date) {
@@ -77,16 +95,21 @@ export default function PlayerPage() {
     loadBundle();
   }, []);
 
-  useInterval(() => {
+  const refreshBundle = useCallback(() => {
     loadBundle();
-  }, 60_000);
+  }, []);
+
+  useInterval(refreshBundle, 60_000);
 
   useEffect(() => {
-    fetchWeatherNow().then(setWeather).catch(() => {});
+    fetchWeatherNow().then(setWeather).catch(() => { });
   }, []);
-  useInterval(() => {
-    fetchWeatherNow().then(setWeather).catch(() => {});
-  }, 10 * 60_000);
+
+  const refreshWeather = useCallback(() => {
+    fetchWeatherNow().then(setWeather).catch(() => { });
+  }, []);
+
+  useInterval(refreshWeather, 10 * 60_000);
 
   const activeVideos = useMemo(() => {
     const list = bundle?.youtubeVideos ?? [];
@@ -119,7 +142,7 @@ export default function PlayerPage() {
 
   const imageAnnouncements = useMemo(() => {
     const filtered = activeAnnouncements.filter((a) => (a.display_mode ?? "small") === "image");
-    console.log(`🖼️ Image announcements found: ${filtered.length}`, filtered.map(a => ({ id: a.id, title: a.title, images: a.image_urls?.length || (a.image_url ? 1 : 0) })));
+    if (DEBUG) console.log(`🖼️ Image announcements found: ${filtered.length}`, filtered.map(a => ({ id: a.id, title: a.title, images: a.image_urls?.length || (a.image_url ? 1 : 0) })));
     return filtered;
   }, [activeAnnouncements]);
 
@@ -130,7 +153,7 @@ export default function PlayerPage() {
       else if (a.image_url) urls.push(a.image_url);
       if (urls.length >= 10) break;
     }
-    console.log(`🖼️ Total image URLs collected: ${urls.length}`, urls);
+    if (DEBUG) console.log(`🖼️ Total image URLs collected: ${urls.length}`, urls);
     return urls.slice(0, 10);
   }, [imageAnnouncements]);
 
@@ -168,23 +191,31 @@ export default function PlayerPage() {
     return buildCards({ announcements: textAnnouncements, events: [], schoolInfo: [], youtubeVideos: [] });
   }, [textAnnouncements]);
 
-  useInterval(() => {
+  const rotateCards = useCallback(() => {
     if (!cards.length) return;
     if (mode === "video") return;
     setCardIndex((x) => x + 1);
-  }, 12_000);
+  }, [cards.length, mode]);
 
-  useInterval(() => {
+  useInterval(rotateCards, Math.max(5, rotation.textSeconds || 10) * 1000);
+
+  const rotateAnnouncements = useCallback(() => {
     if (!activeAnnouncements.length) return;
     setAnnouncementIndex((x) => (x + 1) % activeAnnouncements.length);
-  }, 12_000);
+  }, [activeAnnouncements.length]);
 
-  useInterval(() => {
-    if (!imageUrls.length) return;
-    const nextIndex = (imageIndex + 1) % imageUrls.length;
-    console.log(`🖼️ Image slideshow: ${imageIndex + 1}/${imageUrls.length} → ${nextIndex + 1}/${imageUrls.length}`);
-    setImageIndex(nextIndex);
-  }, 30000);
+  useInterval(rotateAnnouncements, Math.max(5, rotation.textSeconds || 10) * 1000);
+
+  const rotateImages = useCallback(() => {
+    if (imageUrls.length < 2) return; // 0 veya 1 resimde döngü gereksiz
+    setImageIndex((prev) => {
+      const nextIndex = (prev + 1) % imageUrls.length;
+      if (DEBUG) console.log(`🖼️ Image slideshow: ${prev + 1}/${imageUrls.length} → ${nextIndex + 1}/${imageUrls.length}`);
+      return nextIndex;
+    });
+  }, [imageUrls.length]);
+
+  useInterval(rotateImages, Math.max(5, rotation.imageSeconds || 10) * 1000);
 
   useEffect(() => {
     setImageIndex(0);
@@ -192,14 +223,14 @@ export default function PlayerPage() {
 
   // Mode değiştiğinde cardIndex'i sıfırla
   useEffect(() => {
-    console.log(`🎬 Mode changed to: ${mode}`);
+    if (DEBUG) console.log(`🎬 Mode changed to: ${mode}`);
     if (mode === "video") {
       setCardIndex(0);
     }
     if (mode === "image") {
-      console.log(`🖼️ Image mode active. Images available: ${imageUrls.length}`);
+      if (DEBUG) console.log(`🖼️ Image mode active. Images available: ${imageUrls.length}`);
       if (imageUrls.length === 0) {
-        console.warn("⚠️ No images available for slideshow!");
+        if (DEBUG) console.warn("⚠️ No images available for slideshow!");
       }
     }
   }, [mode, imageUrls.length]);
@@ -208,8 +239,8 @@ export default function PlayerPage() {
     const b = bundle;
     if (!b) return { state: "closed" as const, nextInSec: null as number | null, nextLabel: null as string | null };
 
-    const dateKey = todayKeyTR(now);
-    const weekday = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" })).getDay();
+    const dateKey = todayKeyTR(nowTR);
+    const weekday = nowTR.getDay();
 
     const picked = pickSlotsForToday({
       dateKey,
@@ -218,13 +249,13 @@ export default function PlayerPage() {
       overrides: b.overrides as any,
     });
 
-    const st = computeNowStatus(now, picked.slots);
+    const st = computeNowStatus(nowTR, picked.slots);
     return {
       state: st.state,
       nextInSec: st.nextInSec ?? null,
       nextLabel: st.nextLabel ?? null,
     };
-  }, [bundle, now]);
+  }, [bundle, nowTR]);
 
   const publishedAnnouncements = useMemo(() => {
     return smallAnnouncements;
@@ -237,12 +268,12 @@ export default function PlayerPage() {
       image: imageUrls.length > 0,
       text: textAnnouncements.length > 0,
     };
-    console.log(`📊 Available content: Videos=${activeVideos.length}, Images=${imageUrls.length}, Text=${textAnnouncements.length}`);
+    if (DEBUG) console.log(`📊 Available content: Videos=${activeVideos.length}, Images=${imageUrls.length}, Text=${textAnnouncements.length}`);
     const first = order.find((k) => available[k]) ?? "text";
     setMode((prev) => {
       const newMode = available[prev] ? prev : first;
       if (newMode !== prev) {
-        console.log(`🔄 Content changed, mode: ${prev} → ${newMode}`);
+        if (DEBUG) console.log(`🔄 Content changed, mode: ${prev} → ${newMode}`);
       }
       return newMode;
     });
@@ -265,13 +296,13 @@ export default function PlayerPage() {
 
   const onVideoEnded = useCallback(() => {
     const currentVideoIndex = cardIndex % Math.max(1, videoCards.length);
-    console.log(`📹 onVideoEnded called. Current video: ${currentVideoIndex + 1}/${videoCards.length}`);
+    if (DEBUG) console.log(`📹 onVideoEnded called. Current video: ${currentVideoIndex + 1}/${videoCards.length}`);
     if (currentVideoIndex < videoCards.length - 1) {
-      console.log(`📹 Moving to next video (${currentVideoIndex + 2}/${videoCards.length})`);
+      if (DEBUG) console.log(`📹 Moving to next video (${currentVideoIndex + 2}/${videoCards.length})`);
       setCardIndex((x) => x + 1);
     } else {
       const nextMode = getNextMode();
-      console.log(`📹 Last video finished, switching to ${nextMode} mode`);
+      if (DEBUG) console.log(`📹 Last video finished, switching to ${nextMode} mode`);
       setCardIndex(0); // Reset card index for next cycle
       setMode(nextMode);
     }
@@ -280,15 +311,17 @@ export default function PlayerPage() {
   useEffect(() => {
     if (!rotation.enabled) return;
     if (mode === "video") return;
-    const duration = mode === "image" ? Math.max(1, imageUrls.length) * 30 : 60;
-    console.log(`🔄 Mode rotation timer: ${mode} will switch in ${duration} seconds`);
+    const duration = mode === "image"
+      ? Math.max(1, imageUrls.length) * Math.max(5, rotation.imageSeconds || 10)
+      : Math.max(1, textCards.length) * Math.max(5, rotation.textSeconds || 10);
+    if (DEBUG) console.log(`🔄 Mode rotation timer: ${mode} will switch in ${duration} seconds`);
     const t = setTimeout(() => {
       const nextMode = getNextMode();
-      console.log(`🔄 Switching mode: ${mode} → ${nextMode}`);
+      if (DEBUG) console.log(`🔄 Switching mode: ${mode} → ${nextMode}`);
       setMode(nextMode);
     }, Math.max(5, duration) * 1000);
     return () => clearTimeout(t);
-  }, [mode, rotation, getNextMode, imageUrls.length]);
+  }, [mode, rotation, getNextMode, imageUrls.length, textCards.length]);
 
   if (!mounted) return null;
 
@@ -318,6 +351,7 @@ export default function PlayerPage() {
                 cards={videoCards}
                 index={cardIndex}
                 onVideoEnded={onVideoEnded}
+                videoMaxSeconds={Math.max(30, rotation.videoSeconds || 300)}
               />
             ) : mode === "image" ? (
               <div className="h-full rounded-2xl overflow-hidden relative" style={{ background: BRAND.colors.panel }}>

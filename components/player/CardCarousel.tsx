@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { BRAND } from "@/lib/branding";
+import { loadYouTubeIframeApi, type YTPlayer } from "@/lib/youtubeIframeApi";
 import type { Announcement, EventItem, SchoolInfo, YouTubeVideo } from "@/types/player";
+
+const DEBUG = false;
 
 type Card =
   | { kind: "announcement"; data: Announcement }
@@ -61,7 +64,12 @@ export function buildCards(params: {
   return [...v, ...a, ...e, ...a.slice(0, 6), ...i];
 }
 
-export function CardCarousel(props: { cards: ReturnType<typeof buildCards>; index: number; onVideoEnded?: () => void }) {
+export function CardCarousel(props: {
+  cards: ReturnType<typeof buildCards>;
+  index: number;
+  onVideoEnded?: () => void;
+  videoMaxSeconds?: number; // Watchdog: ENDED gelmezse bu süre sonunda otomatik geç
+}) {
   const card = props.cards[props.index % Math.max(1, props.cards.length)];
   const [imageIndex, setImageIndex] = useState(0);
   const videoId = card?.kind === "video" ? extractYouTubeId(card.data.url) : null;
@@ -86,23 +94,118 @@ export function CardCarousel(props: { cards: ReturnType<typeof buildCards>; inde
     setImageIndex(0);
   }, [props.index]);
 
+  // YouTube player refs
+  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
+  const hasEndedRef = useRef(false);
+
+  // Video bitti callback'i (çift çağrı önleme)
+  const handleVideoEnded = useCallback(() => {
+    if (hasEndedRef.current) return;
+    hasEndedRef.current = true;
+    if (DEBUG) console.log(`🎥 Video ended: ${videoId}`);
+    props.onVideoEnded?.();
+  }, [videoId, props.onVideoEnded]);
+
   // YouTube IFrame API ile video bitişi tespiti
   useEffect(() => {
-    if (!videoKey || !props.onVideoEnded) return;
+    if (!videoKey || !videoId || !props.onVideoEnded) return;
+    if (!playerContainerRef.current) return;
 
-    console.log(`🎥 Video started: ${videoId} (key: ${videoKey})`);
-    
-    // Test için 15 saniye (production'da daha uzun olmalı)
-    const timer = setTimeout(() => {
-      console.log("⏱️ Video duration timeout, calling onVideoEnded");
-      props.onVideoEnded?.();
-    }, 15 * 1000); // 15 saniye
+    hasEndedRef.current = false;
+    let player: YTPlayer | null = null;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let isCancelled = false;
+
+    const initPlayer = async () => {
+      try {
+        await loadYouTubeIframeApi(10000);
+        if (isCancelled) return;
+
+        if (DEBUG) console.log(`🎥 Creating YT.Player for: ${videoId}`);
+
+        // Container'a unique id ver
+        const containerId = `yt-player-${videoId}-${Date.now()}`;
+        if (playerContainerRef.current) {
+          playerContainerRef.current.id = containerId;
+        }
+
+        player = new window.YT.Player(containerId, {
+          videoId,
+          playerVars: {
+            autoplay: 1,
+            mute: 1,
+            controls: 0,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+            disablekb: 1,
+            fs: 0,
+          },
+          events: {
+            onReady: (event) => {
+              if (isCancelled) return;
+              if (DEBUG) console.log(`🎥 Video ready: ${videoId}`);
+              // Autoplay kısıtlarına karşı
+              event.target.mute();
+              event.target.playVideo();
+            },
+            onStateChange: (event) => {
+              if (isCancelled) return;
+              // ENDED = 0
+              if (event.data === 0) {
+                if (DEBUG) console.log(`🎥 Video state ENDED: ${videoId}`);
+                handleVideoEnded();
+              }
+            },
+            onError: (event) => {
+              if (isCancelled) return;
+              if (DEBUG) console.log(`🎥 Video error (${event.data}): ${videoId}`);
+              // Hata durumunda video atla
+              handleVideoEnded();
+            },
+          },
+        });
+
+        playerRef.current = player;
+      } catch (err) {
+        if (isCancelled) return;
+        if (DEBUG) console.log(`🎥 YT API yüklenemedi, fallback timer başlatılıyor`);
+        // API yüklenemezse 5 saniye sonra atla
+        fallbackTimer = setTimeout(() => {
+          if (!isCancelled) {
+            handleVideoEnded();
+          }
+        }, 5000);
+      }
+    };
+
+    initPlayer();
+
+    // Watchdog: ENDED event gelmezse videoMaxSeconds sonra otomatik geç
+    const watchdogMs = (props.videoMaxSeconds ?? 300) * 1000; // default 5 dakika
+    const maxDurationTimer = setTimeout(() => {
+      if (!isCancelled && !hasEndedRef.current) {
+        if (DEBUG) console.log(`🎥 Watchdog timeout (${props.videoMaxSeconds ?? 300}s), skipping: ${videoId}`);
+        handleVideoEnded();
+      }
+    }, watchdogMs);
 
     return () => {
-      console.log(`🎥 Video cleanup: ${videoId}`);
-      clearTimeout(timer);
+      isCancelled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      clearTimeout(maxDurationTimer);
+      if (player) {
+        try {
+          player.destroy();
+          if (DEBUG) console.log(`🎥 Player destroyed: ${videoId}`);
+        } catch {
+          // Player already destroyed
+        }
+      }
+      playerRef.current = null;
     };
-  }, [videoKey, props.onVideoEnded]);
+  }, [videoKey, videoId, props.onVideoEnded, handleVideoEnded]);
 
   if (!card) {
     return null;
@@ -181,12 +284,9 @@ export function CardCarousel(props: { cards: ReturnType<typeof buildCards>; inde
       ) : (
         <div className="flex-1">
           <div className="relative w-full h-full rounded-2xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-            <iframe
-              key={videoId}
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&disablekb=1&fs=0`}
+            <div
+              ref={playerContainerRef}
               className="absolute inset-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
             />
           </div>
         </div>
