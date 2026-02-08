@@ -7,15 +7,23 @@ import { signOut, type Profile } from "@/lib/adminAuth";
 
 function NavItem({ href, label }: { href: string; label: string }) {
   const pathname = usePathname();
-  const active = pathname === href || pathname.startsWith(href + "/");
+  // Ana sayfa (/admin) için tam eşleşme, diğerleri için prefix eşleşmesi
+  const active = href === "/admin"
+    ? pathname === href
+    : pathname.startsWith(href);
+
   return (
-    <Link
-      href={href}
-      className={`block px-4 py-3 rounded-xl text-base font-semibold transition-colors ${active ? "bg-brand text-brand-foreground" : "bg-transparent text-white hover:bg-white/5"
-        }`}
-    >
-      {label}
-    </Link>
+    <div className="mb-1">
+      <Link
+        href={href}
+        className={`block px-4 py-3 rounded-xl text-sm font-bold transition-all ${active
+          ? "bg-brand text-white shadow-lg shadow-brand/20 translate-x-1"
+          : "text-muted hover:bg-white/5 hover:text-white"
+          }`}
+      >
+        {label}
+      </Link>
+    </div>
   );
 }
 
@@ -96,13 +104,19 @@ export function AdminShell(props: { profile: Profile; children: React.ReactNode 
         </div>
 
         <div className="space-y-2">
+          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 mt-6 px-4">Genel</div>
           <NavItem href="/admin" label="Gösterge Paneli" />
-          <NavItem href="/admin/announcements" label="Ana Ekran" />
+
+          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 mt-6 px-4">İçerik Yönetimi</div>
+          <NavItem href="/admin/announcements" label="Duyurular & İçerik" />
+          <NavItem href="/admin/youtube" label="YouTube Videoları" />
+          <NavItem href="/admin/ticker" label="Alt Bant (Ticker)" />
+          <NavItem href="/admin/school-info" label="Okul Bilgileri" />
+
+          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-2 mt-6 px-4">Nöbet & Ders</div>
           <NavItem href="/admin/duties" label="Nöbetçi Öğretmen" />
           <NavItem href="/admin/schedule/templates" label="Zil Programı" />
           <NavItem href="/admin/schedule/overrides" label="Özel Gün Programı" />
-          <NavItem href="/admin/ticker" label="Alt Bant (Ticker)" />
-          <NavItem href="/admin/school-info" label="Okul Bilgileri" />
         </div>
 
         <div className="mt-8">
