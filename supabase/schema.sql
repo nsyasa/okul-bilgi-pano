@@ -160,10 +160,58 @@ for select to anon, authenticated
 using (status = 'published');
 
 drop policy if exists "ann_editors_all" on public.announcements;
-create policy "ann_editors_all" on public.announcements
-for all to authenticated
+
+-- Ann: Editors can SELECT all (for admin panel)
+drop policy if exists "ann_editors_select" on public.announcements;
+create policy "ann_editors_select" on public.announcements
+for select to authenticated
+using (public.can_edit());
+
+-- Ann: Editors can INSERT (sensitive+published requires can_approve)
+drop policy if exists "ann_editors_insert" on public.announcements;
+create policy "ann_editors_insert" on public.announcements
+for insert to authenticated
+with check (
+  public.can_edit() and (
+    category != 'sensitive' or status != 'published' or public.can_approve()
+  )
+);
+
+-- Ann: Editors can UPDATE (sensitive+published requires can_approve)
+drop policy if exists "ann_editors_update" on public.announcements;
+create policy "ann_editors_update" on public.announcements
+for update to authenticated
 using (public.can_edit())
-with check (public.can_edit());
+with check (
+  public.can_edit() and (
+    category != 'sensitive' or status != 'published' or public.can_approve()
+  )
+);
+
+-- Ann: Editors can DELETE
+drop policy if exists "ann_editors_delete" on public.announcements;
+create policy "ann_editors_delete" on public.announcements
+for delete to authenticated
+using (public.can_edit());
+
+-- Trigger: Ek güvenlik katmanı (RLS bypass edilse bile çalışır)
+create or replace function public.enforce_sensitive_publish()
+returns trigger language plpgsql security definer as $$
+begin
+  -- Hassas duyuru + yayınla kombinasyonu sadece approver/admin yapabilir
+  if new.category = 'sensitive' and new.status = 'published' then
+    if not public.can_approve() then
+      raise exception 'Hassas duyuru sadece onaylayıcı veya yönetici tarafından yayınlanabilir';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_sensitive_publish on public.announcements;
+create trigger trg_enforce_sensitive_publish
+before insert or update on public.announcements
+for each row execute function public.enforce_sensitive_publish();
 
 -- Events
 drop policy if exists "events_read_all" on public.events;
