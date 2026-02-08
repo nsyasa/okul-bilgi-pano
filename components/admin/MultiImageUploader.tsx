@@ -19,12 +19,19 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
   const [pendingImages, setPendingImages] = useState<ImageInfo[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const urls = value ?? [];
 
   const validateImage = (file: File): Promise<ImageInfo> => {
     return new Promise((resolve, reject) => {
+      // Basic type check
+      if (!file.type.startsWith("image/")) {
+        reject(new Error(`"${file.name}" bir resim dosyası değil.`));
+        return;
+      }
+
       const img = new Image();
       const preview = URL.createObjectURL(file);
 
@@ -61,23 +68,39 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
     });
   };
 
-  const selectFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const processFiles = async (files: File[]) => {
     if (!files.length) return;
 
+    if (uploading || pendingImages.length > 0) {
+      setMsg("⚠️ Önce mevcut işlemi tamamlayın.");
+      return;
+    }
+
+    const remainingSlots = 10 - urls.length;
+    if (remainingSlots <= 0) {
+      setMsg("⚠️ Maksimum 10 resim limitine ulaştınız.");
+      return;
+    }
+
+    const filesToProcess = files.slice(0, remainingSlots);
     setMsg("Resimler kontrol ediliyor...");
 
     try {
-      const validatedImages = await Promise.all(files.slice(0, 10 - urls.length).map(validateImage));
+      const validatedImages = await Promise.all(filesToProcess.map(validateImage));
       setPendingImages(validatedImages);
-      setMsg(validatedImages.some(img => img.warnings.length > 0) 
+      setMsg(validatedImages.some(img => img.warnings.length > 0)
         ? "⚠️ Bazı resimlerde uyarılar var. Yine de yükleyebilirsiniz."
         : "✅ Resimler hazır. Yükle butonuna basın.");
     } catch (err: any) {
       setMsg(`Hata: ${err.message}`);
     } finally {
-      e.target.value = "";
+      if (inputRef.current) inputRef.current.value = "";
     }
+  };
+
+  const selectFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    await processFiles(files);
   };
 
   const uploadPending = async () => {
@@ -96,10 +119,11 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
         const { data, error } = await sb.storage.from("pano-media").upload(fileName, imgInfo.file, { upsert: false });
 
         if (error) throw error;
+        if (!data) throw new Error("Upload failed, no data returned");
 
         const { data: publicData } = sb.storage.from("pano-media").getPublicUrl(data.path);
         newUrls.push(publicData.publicUrl);
-        
+
         // Preview URL'lerini temizle
         URL.revokeObjectURL(imgInfo.preview);
       }
@@ -122,6 +146,28 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
 
   const remove = (index: number) => {
     onChange(urls.filter((_, i) => i !== index));
+  };
+
+  // Drag Handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (uploading || pendingImages.length > 0 || urls.length >= 10) return;
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    if (uploading || pendingImages.length > 0 || urls.length >= 10) return;
+
+    const files = Array.from(e.dataTransfer.files);
+    await processFiles(files);
   };
 
   return (
@@ -191,9 +237,16 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
         </div>
       )}
 
-      {/* Resim Seçme Butonu */}
+      {/* Resim Seçme Butonu ve DragDrop Alanı */}
       {urls.length + pendingImages.length < 10 && (
-        <div>
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-all ${isDragging ? "bg-white/10 border-white" : "border-gray-600 hover:border-gray-500"
+            }`}
+          style={{ minHeight: "150px" }}
+        >
           <input
             ref={inputRef}
             type="file"
@@ -203,20 +256,22 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
             onChange={selectFiles}
             disabled={uploading || pendingImages.length > 0}
           />
-          <PrimaryButton
-            type="button"
-            disabled={uploading || pendingImages.length > 0}
-            onClick={() => inputRef.current?.click()}
-          >
-            + Resim Seç ({urls.length + pendingImages.length}/10)
-          </PrimaryButton>
-          
-          <div className="text-xs mt-3 p-3 rounded-lg" style={{ background: BRAND.colors.bg, color: BRAND.colors.muted }}>
-            <div className="font-semibold mb-1">📸 Resim Önerileri:</div>
-            <div>• <b>Minimum:</b> 1280x720 piksel (HD Ready)</div>
-            <div>• <b>Önerilen:</b> 1920x1080 piksel (Full HD)</div>
-            <div>• <b>En-Boy Oranı:</b> 16:9 (yatay resimler)</div>
-            <div>• <b>Dosya Boyutu:</b> Max 5MB</div>
+
+          <div className="mb-3 text-4xl">📸</div>
+          <div className="text-center">
+            <PrimaryButton
+              type="button"
+              disabled={uploading || pendingImages.length > 0}
+              onClick={() => inputRef.current?.click()}
+            >
+              + Resim Seç
+            </PrimaryButton>
+          </div>
+          <div className="mt-2 text-xs text-center" style={{ color: BRAND.colors.muted }}>
+            veya resimleri buraya sürükleyip bırakın
+          </div>
+          <div className="text-xs mt-4 text-center" style={{ color: BRAND.colors.muted }}>
+            Max 10 resim • Önerilen: 1920x1080 (16:9) • Max 5MB
           </div>
         </div>
       )}

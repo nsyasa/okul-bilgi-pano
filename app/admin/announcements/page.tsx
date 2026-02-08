@@ -6,10 +6,12 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { BRAND } from "@/lib/branding";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { Announcement, YouTubeVideo, PlayerRotationSettings } from "@/types/player";
-import { FieldLabel, PrimaryButton, SecondaryButton, Select, TextArea, TextInput } from "@/components/admin/FormBits";
-import { ImageUploader } from "@/components/admin/ImageUploader";
-import { MultiImageUploader } from "@/components/admin/MultiImageUploader";
+import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
+import { AnnouncementForm, AnnouncementFormState } from "@/components/admin/AnnouncementForm";
 import { canApprove, type Profile } from "@/lib/adminAuth";
+import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
+import toast from "react-hot-toast";
+import { useSearchParams } from "next/navigation";
 
 type FormState = Partial<Announcement> & { id?: string };
 type VideoForm = Partial<YouTubeVideo> & { id?: string };
@@ -60,8 +62,18 @@ function ImagePreview({ imageUrl, imageUrls }: { imageUrl?: string | null; image
   );
 }
 
+import { Suspense } from "react";
+
 export default function AnnouncementsPage() {
-  return <AuthGate>{(profile) => <AnnouncementsInner profile={profile} />}</AuthGate>;
+  return (
+    <AuthGate>
+      {(profile) => (
+        <Suspense fallback={<div className="text-white p-5">Yükleniyor...</div>}>
+          <AnnouncementsInner profile={profile} />
+        </Suspense>
+      )}
+    </AuthGate>
+  );
 }
 
 function AnnouncementsInner({ profile }: { profile: Profile }) {
@@ -77,7 +89,11 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const [editingVideo, setEditingVideo] = useState<VideoForm | null>(null);
   const [busy, setBusy] = useState(false);
   const [videoBusy, setVideoBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+
+  // Confirm State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ title: string; desc: string; action: () => Promise<void> } | null>(null);
+
   const [rotation, setRotation] = useState<PlayerRotationSettings>({
     enabled: true,
     videoSeconds: 30,
@@ -113,18 +129,24 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     }
   };
 
+  const searchParams = useSearchParams();
+
   useEffect(() => {
     load();
     loadVideos();
     loadSettings();
+
+    if (searchParams.get("new") === "true") {
+      startNew();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const saveSettings = async () => {
     setSavingRotation(true);
     const { error } = await sb.from("player_settings").upsert({ key: "rotation", value: rotation });
-    if (error) setMsg(error.message);
-    else setMsg("Ayarlar kaydedildi.");
+    if (error) toast.error("Hata: " + error.message);
+    else toast.success("Ayarlar kaydedildi.");
     setSavingRotation(false);
   };
 
@@ -168,7 +190,6 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       end_at: null,
       approved_label: false,
     });
-    setMsg(null);
   };
 
   const startNewVideo = () => {
@@ -180,26 +201,23 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       start_at: null,
       end_at: null,
     });
-    setMsg(null);
   };
 
-  const save = async () => {
-    if (!editing) return;
+  const save = async (formData: AnnouncementFormState) => {
     setBusy(true);
-    setMsg(null);
     try {
       const payload: any = {
-        title: (editing.title ?? "").trim(),
-        body: editing.body ?? null,
-        image_url: editing.image_url ?? null,
-        image_urls: editing.image_urls ?? null,
-        priority: Number(editing.priority ?? 50),
-        status: editing.status ?? "draft",
-        category: editing.category ?? "general",
-        display_mode: editing.display_mode ?? "small",
-        start_at: editing.start_at || null,
-        end_at: editing.end_at || null,
-        approved_label: !!editing.approved_label,
+        title: (formData.title ?? "").trim(),
+        body: formData.body ?? null,
+        image_url: formData.image_url ?? null,
+        image_urls: formData.image_urls ?? null,
+        priority: Number(formData.priority ?? 50),
+        status: formData.status ?? "draft",
+        category: formData.category ?? "general",
+        display_mode: formData.display_mode ?? "small",
+        start_at: formData.start_at || null,
+        end_at: formData.end_at || null,
+        approved_label: !!formData.approved_label,
       };
 
       // Hassas kategorilerde publish kilit: önce review
@@ -208,57 +226,85 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         payload.approved_label = false;
       }
 
-      if (editing.id) {
-        const { error } = await sb.from("announcements").update(payload).eq("id", editing.id);
+      if (formData.id) {
+        const { error } = await sb.from("announcements").update(payload).eq("id", formData.id);
         if (error) throw error;
       } else {
         const { error } = await sb.from("announcements").insert(payload);
         if (error) throw error;
       }
 
-      if (payload.display_mode === "big" && editing.id) {
-        await sb.from("announcements").update({ display_mode: "small" }).neq("id", editing.id).eq("display_mode", "big");
+      if (payload.display_mode === "big" && formData.id) {
+        await sb.from("announcements").update({ display_mode: "small" }).neq("id", formData.id).eq("display_mode", "big");
       }
 
       setEditing(null);
       await load();
-      setMsg("Kaydedildi.");
+      toast.success("Başarıyla kaydedildi.");
     } catch (e: any) {
-      setMsg(e?.message ?? "Hata");
+      toast.error(e?.message ?? "Bir hata oluştu.");
     } finally {
       setBusy(false);
     }
   };
 
-  const del = async (id: string) => {
-    if (!confirm("Silinsin mi?")) return;
-    const { error } = await sb.from("announcements").delete().eq("id", id);
-    if (!error) await load();
+  const del = (id: string) => {
+    setConfirmData({
+      title: "Duyuruyu Sil",
+      desc: "Bu duyuru kalıcı olarak silinecek. Geri alınamaz.",
+      action: async () => {
+        const { error } = await sb.from("announcements").delete().eq("id", id);
+        if (!error) {
+          await load();
+          toast.success("Silindi.");
+        } else {
+          toast.error("Hata: " + error.message);
+        }
+        setConfirmOpen(false);
+      },
+    });
+    setConfirmOpen(true);
   };
 
-  const delVideo = async (id: string) => {
-    if (!confirm("Silinsin mi?")) return;
-    const { error } = await sb.from("youtube_videos").delete().eq("id", id);
-    if (!error) await loadVideos();
+  const delVideo = (id: string) => {
+    setConfirmData({
+      title: "Videoyu Sil",
+      desc: "Bu video listeden kaldırılacak.",
+      action: async () => {
+        const { error } = await sb.from("youtube_videos").delete().eq("id", id);
+        if (!error) {
+          await loadVideos();
+          toast.success("Silindi.");
+        } else {
+          toast.error("Hata: " + error.message);
+        }
+        setConfirmOpen(false);
+      },
+    });
+    setConfirmOpen(true);
   };
 
   const toggleAnnouncementActive = async (a: Announcement, next: boolean) => {
-    setMsg(null);
     const payload: any = next ? { status: "published" } : { status: "draft" };
     if (next && a.category === "sensitive") {
       payload.status = "pending_review";
       payload.approved_label = false;
     }
     const { error } = await sb.from("announcements").update(payload).eq("id", a.id);
-    if (error) setMsg(error.message);
-    else await load();
+    if (error) toast.error(error.message);
+    else {
+      toast.success(next ? "Aktif edildi." : "Pasif edildi.");
+      await load();
+    }
   };
 
   const toggleVideoActive = async (v: YouTubeVideo, next: boolean) => {
-    setMsg(null);
     const { error } = await sb.from("youtube_videos").update({ is_active: next }).eq("id", v.id);
-    if (error) setMsg(error.message);
-    else await loadVideos();
+    if (error) toast.error(error.message);
+    else {
+      toast.success(next ? "Aktif edildi." : "Pasif edildi.");
+      await loadVideos();
+    }
   };
 
   const toLocalInput = (iso: string | null | undefined) => {
@@ -278,7 +324,6 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const saveVideo = async () => {
     if (!editingVideo) return;
     setVideoBusy(true);
-    setMsg(null);
     try {
       const payload: any = {
         title: (editingVideo.title ?? "").trim() || null,
@@ -290,7 +335,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       };
 
       if (!payload.url) {
-        setMsg("Video URL boş olamaz.");
+        toast.error("Video URL boş olamaz.");
         return;
       }
 
@@ -304,9 +349,9 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
       setEditingVideo(null);
       await loadVideos();
-      setMsg("Kaydedildi.");
+      toast.success("Video kaydedildi.");
     } catch (e: any) {
-      setMsg(e?.message ?? "Hata");
+      toast.error(e?.message ?? "Hata oluştu.");
     } finally {
       setVideoBusy(false);
     }
@@ -315,7 +360,12 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const approveAndPublish = async (a: Announcement) => {
     if (!canApprove(profile.role)) return;
     const { error } = await sb.from("announcements").update({ status: "published", approved_label: true }).eq("id", a.id);
-    if (!error) await load();
+    if (!error) {
+      toast.success("Onaylandı ve yayınlandı.");
+      await load();
+    } else {
+      toast.error("Hata: " + error.message);
+    }
   };
 
   return (
@@ -413,12 +463,6 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
           <option value="published">Yayında</option>
           <option value="rejected">Reddedildi</option>
         </select>
-
-        {msg ? (
-          <div className="text-sm" style={{ color: BRAND.colors.warn }}>
-            • {msg}
-          </div>
-        ) : null}
       </div>
 
       <div className="mt-5 space-y-3">
@@ -467,7 +511,6 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                     type="button"
                     onClick={() => {
                       setEditing(a);
-                      setMsg(null);
                     }}
                   >
                     Düzenle
@@ -533,7 +576,6 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                     type="button"
                     onClick={() => {
                       setEditingVideo(v);
-                      setMsg(null);
                     }}
                   >
                     Düzenle
@@ -553,110 +595,12 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       </div>
 
       {editing ? (
-        <div className="fixed inset-0 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.6)" }}>
-          <div className="w-full max-w-3xl p-6 rounded-2xl overflow-auto max-h-[90vh]" style={{ background: BRAND.colors.bg }}>
-            <div className="flex items-center justify-between">
-              <div className="text-white text-2xl font-extrabold">
-                {editing.id
-                  ? (editing.display_mode === "big" ? "Ana Duyuru Düzenle" : editing.display_mode === "image" ? "Resim Slaytı Düzenle" : "Duyuru Düzenle")
-                  : (tab === "big" ? "Yeni Ana Duyuru" : tab === "image" ? "Yeni Resim Slaytı" : "Yeni Duyuru")}
-              </div>
-              <SecondaryButton type="button" onClick={() => setEditing(null)}>
-                Kapat
-              </SecondaryButton>
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-5">
-              <div className="col-span-2">
-                <FieldLabel>Başlık</FieldLabel>
-                <TextInput value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} />
-              </div>
-
-              <div className="col-span-2">
-                <FieldLabel>Metin</FieldLabel>
-                <TextArea value={editing.body ?? ""} onChange={(e) => setEditing({ ...editing, body: e.target.value })} />
-              </div>
-
-              <div className="col-span-2">
-                <FieldLabel>Görsel (Tek Resim - Eski Yöntem)</FieldLabel>
-                <ImageUploader value={editing.image_url ?? null} onChange={(url) => setEditing({ ...editing, image_url: url })} />
-              </div>
-
-              <div className="col-span-2">
-                <FieldLabel>Resim Galerisi (Çoklu Resim - Yeni)</FieldLabel>
-                <MultiImageUploader value={editing.image_urls ?? null} onChange={(urls) => setEditing({ ...editing, image_urls: urls })} />
-                <div className="text-xs mt-2" style={{ color: BRAND.colors.muted }}>
-                  En fazla 10 resim. Resimler TV ekranında otomatik döner (3sn aralıklarla).
-                </div>
-              </div>
-
-              <div>
-                <FieldLabel>Kategori</FieldLabel>
-                <Select value={editing.category ?? "general"} onChange={(e) => setEditing({ ...editing, category: e.target.value as any })}>
-                  <option value="general">Genel</option>
-                  <option value="event">Etkinlik</option>
-                  <option value="special_day">Belirli Gün/Hafta</option>
-                  <option value="health">Sağlık/Hareket</option>
-                  <option value="info">Bilgi</option>
-                  <option value="sensitive">Hassas (Editör Onayı)</option>
-                </Select>
-              </div>
-
-              <div>
-                <FieldLabel>Durum</FieldLabel>
-                <Select value={editing.status ?? "draft"} onChange={(e) => setEditing({ ...editing, status: e.target.value as any })}>
-                  <option value="draft">Taslak</option>
-                  <option value="pending_review">Onay Bekliyor</option>
-                  <option value="approved">Onaylandı</option>
-                  <option value="published">Yayınla</option>
-                  <option value="rejected">Reddedildi</option>
-                </Select>
-                <div className="text-xs mt-2" style={{ color: BRAND.colors.muted }}>
-                  Not: Kategori “Hassas” ise “Yayınla” seçsen bile sistem “Onay Bekliyor”a çevirir.
-                </div>
-              </div>
-
-              <div>
-                <FieldLabel>Gösterim Tipi</FieldLabel>
-                <div className="px-4 py-3 rounded-xl text-sm" style={{ background: BRAND.colors.panel, color: "white" }}>
-                  {editing.display_mode === "big" ? "Ana Duyuru" : editing.display_mode === "image" ? "Resim Slaytı" : "Duyuru"}
-                </div>
-              </div>
-
-              <div>
-                <FieldLabel>Öncelik (0–100)</FieldLabel>
-                <TextInput type="number" value={String(editing.priority ?? 50)} onChange={(e) => setEditing({ ...editing, priority: Number(e.target.value) })} />
-              </div>
-
-              <div>
-                <FieldLabel>Başlangıç Tarihi</FieldLabel>
-                <TextInput
-                  type="datetime-local"
-                  value={editing.start_at ? new Date(editing.start_at).toISOString().slice(0, 16) : ""}
-                  onChange={(e) => setEditing({ ...editing, start_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                />
-              </div>
-
-              <div>
-                <FieldLabel>Bitiş Tarihi</FieldLabel>
-                <TextInput
-                  type="datetime-local"
-                  value={editing.end_at ? new Date(editing.end_at).toISOString().slice(0, 16) : ""}
-                  onChange={(e) => setEditing({ ...editing, end_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                />
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-center justify-end gap-3">
-              <SecondaryButton type="button" onClick={() => setEditing(null)}>
-                İptal
-              </SecondaryButton>
-              <PrimaryButton disabled={busy} type="button" onClick={save}>
-                {busy ? "Kaydediliyor…" : "Kaydet"}
-              </PrimaryButton>
-            </div>
-          </div>
-        </div>
+        <AnnouncementForm
+          initialState={editing}
+          onClose={() => setEditing(null)}
+          onSave={save}
+          busy={busy}
+        />
       ) : null}
 
       {editingVideo ? (
@@ -730,6 +674,15 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
           </div>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={confirmOpen}
+        title={confirmData?.title || ""}
+        description={confirmData?.desc}
+        destructive
+        confirmText="Sil"
+        onConfirm={confirmData?.action || (() => { })}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </AdminShell>
   );
 }

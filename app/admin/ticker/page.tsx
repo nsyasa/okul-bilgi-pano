@@ -7,6 +7,8 @@ import { BRAND } from "@/lib/branding";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { TickerItem } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
+import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
+import toast from "react-hot-toast";
 
 type Form = Partial<TickerItem> & { id?: string };
 
@@ -18,7 +20,10 @@ function TickerInner({ profile }: any) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<TickerItem[]>([]);
   const [editing, setEditing] = useState<Form | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+
+  // Confirm State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{ title: string; desc: string; action: () => Promise<void> } | null>(null);
 
   const load = async () => {
     const { data, error } = await sb.from("ticker_items").select("*").order("priority", { ascending: false }).limit(200);
@@ -33,7 +38,6 @@ function TickerInner({ profile }: any) {
 
   const save = async () => {
     if (!editing) return;
-    setMsg(null);
     const payload: any = {
       text: (editing.text ?? "").trim(),
       is_active: !!editing.is_active,
@@ -42,23 +46,35 @@ function TickerInner({ profile }: any) {
       end_at: editing.end_at || null,
     };
     if (!payload.text) {
-      setMsg("Metin boş olamaz.");
+      toast.error("Metin boş olamaz.");
       return;
     }
 
     const res = editing.id ? await sb.from("ticker_items").update(payload).eq("id", editing.id) : await sb.from("ticker_items").insert(payload);
-    if (res.error) setMsg(res.error.message);
+    if (res.error) toast.error(res.error.message);
     else {
       setEditing(null);
-      setMsg("Kaydedildi.");
+      toast.success("Kaydedildi.");
       await load();
     }
   };
 
-  const del = async (id: string) => {
-    if (!confirm("Silinsin mi?")) return;
-    const { error } = await sb.from("ticker_items").delete().eq("id", id);
-    if (!error) await load();
+  const del = (id: string) => {
+    setConfirmData({
+      title: "Ticker'ı Sil",
+      desc: "Bu mesaj silinecek.",
+      action: async () => {
+        const { error } = await sb.from("ticker_items").delete().eq("id", id);
+        if (!error) {
+          await load();
+          toast.success("Silindi");
+        } else {
+          toast.error("Hata: " + error.message);
+        }
+        setConfirmOpen(false);
+      },
+    });
+    setConfirmOpen(true);
   };
 
   return (
@@ -75,11 +91,7 @@ function TickerInner({ profile }: any) {
         </PrimaryButton>
       </div>
 
-      {msg ? (
-        <div className="text-sm mt-3" style={{ color: BRAND.colors.warn }}>
-          • {msg}
-        </div>
-      ) : null}
+      {/* msg removed */}
 
       <div className="mt-5 space-y-3">
         {items.length ? (
@@ -98,7 +110,6 @@ function TickerInner({ profile }: any) {
                   type="button"
                   onClick={() => {
                     setEditing(t);
-                    setMsg(null);
                   }}
                 >
                   Düzenle
@@ -182,6 +193,15 @@ function TickerInner({ profile }: any) {
           </div>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={confirmOpen}
+        title={confirmData?.title || ""}
+        description={confirmData?.desc}
+        destructive
+        confirmText="Sil"
+        onConfirm={confirmData?.action || (() => { })}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </AdminShell>
   );
 }

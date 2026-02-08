@@ -2,10 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-brand: #4B3FA7;
+  --color-brand-foreground: #FFFFFF;
+  --color-bg: #1E1F2B;
+  --color-panel: #26283A;
+  --color-text: #FFFFFF;
+  --color-muted: #D6D6E0;
+  --color-ok: #2ECC71;
+  --color-warn: #F1C40F;
+  --color-danger: #E74C3C;
+  --color-info: #3498DB;
+  --color-border: #26283A;
+}
+
 html, body {
   height: 100%;
 }
 
 body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
   margin: 0;
+}
+
+/* Scrollbar customization for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-panel);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand);
 }

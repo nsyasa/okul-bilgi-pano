@@ -9,21 +9,32 @@ import type { DutyTeacher } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import { ymdNowTR } from "@/lib/validate";
 import { generateDutySchedule } from "@/lib/dutySchedule";
+import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
+import toast from "react-hot-toast";
 
 export default function DutiesPage() {
   return <AuthGate>{(profile) => <DutiesInner profile={profile} />}</AuthGate>;
 }
 
-function DutiesInner({ profile }: any) {
+function DutiesInner({ profile }: { profile: any }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [date, setDate] = useState<string>(ymdNowTR());
   const [items, setItems] = useState<DutyTeacher[]>([]);
   const [name, setName] = useState("");
   const [area, setArea] = useState("");
   const [note, setNote] = useState("");
-  const [msg, setMsg] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [copying, setCopying] = useState(false);
+
+  // Confirm State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{
+    title: string;
+    desc: string;
+    confirmText?: string;
+    destructive?: boolean;
+    action: () => Promise<void>;
+  } | null>(null);
 
   const load = async (d = date) => {
     const { data, error } = await sb.from("duty_teachers").select("*").eq("date", d).order("name", { ascending: true });
@@ -52,7 +63,6 @@ function DutiesInner({ profile }: any) {
   }, [date]);
 
   const add = async () => {
-    setMsg(null);
     const payload = {
       date,
       name: name.trim(),
@@ -60,100 +70,128 @@ function DutiesInner({ profile }: any) {
       note: note.trim() || null,
     };
     const { error } = await sb.from("duty_teachers").insert(payload);
-    if (error) setMsg(error.message);
+    if (error) toast.error("Hata: " + error.message);
     else {
       setName("");
       setArea("");
       setNote("");
-      setMsg("Eklendi.");
+      toast.success("Eklendi.");
       await load();
     }
   };
 
-  const del = async (id: string) => {
-    if (!confirm("Silinsin mi?")) return;
-    const { error } = await sb.from("duty_teachers").delete().eq("id", id);
-    if (!error) await load();
+  const del = (id: string) => {
+    setConfirmData({
+      title: "Silinsin mi?",
+      desc: "Bu nöbetçi kaydı silinecek.",
+      destructive: true,
+      confirmText: "Sil",
+      action: async () => {
+        const { error } = await sb.from("duty_teachers").delete().eq("id", id);
+        if (!error) {
+          await load();
+          toast.success("Silindi.");
+        } else {
+          toast.error("Hata: " + error.message);
+        }
+        setConfirmOpen(false);
+      },
+    });
+    setConfirmOpen(true);
   };
 
-  const importSchedule = async () => {
-    if (!confirm("TÜM nöbetçi öğretmen kayıtları silinip çizelgedeki veriler (5 Ocak - 13 Şubat 2026) tekrar yüklenecek. Devam edilsin mi?")) return;
-    
-    setImporting(true);
-    setMsg("İçe aktarılıyor...");
-    
-    try {
-      const { allData, dates } = generateDutySchedule("2026-01-05", "2026-02-13");
+  const importSchedule = () => {
+    setConfirmData({
+      title: "Çizelgeyi İçe Aktar",
+      desc: "DİKKAT: Mevcut TÜM kayıtlar silinecek ve Excel şablonundaki veriler (5 Ocak - 13 Şubat) yüklenecek.\n\nBu işlem geri alınamaz.",
+      destructive: true,
+      confirmText: "Evet, Hepsini Değiştir",
+      action: async () => {
+        setConfirmOpen(false);
+        setImporting(true);
+        const loadingToast = toast.loading("İçe aktarılıyor...");
 
-      // Tüm eski verileri temizle
-      const { error: wipeError } = await sb.from("duty_teachers").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-      if (wipeError) throw wipeError;
+        try {
+          const { allData, dates } = generateDutySchedule("2026-01-05", "2026-02-13");
 
-      // Toplu veri ekle
-      const { error } = await sb.from("duty_teachers").insert(allData);
-      
-      if (error) {
-        setMsg("Hata: " + error.message);
-      } else {
-        setMsg(`✅ Başarılı! ${allData.length} kayıt eklendi (${dates.length} gün)`);
-        await load();
-      }
-    } catch (err: any) {
-      setMsg("Hata: " + err.message);
-    } finally {
-      setImporting(false);
-    }
+          // Tüm eski verileri temizle
+          const { error: wipeError } = await sb.from("duty_teachers").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+          if (wipeError) throw wipeError;
+
+          // Toplu veri ekle
+          const { error } = await sb.from("duty_teachers").insert(allData);
+
+          if (error) {
+            toast.error("Hata: " + error.message, { id: loadingToast });
+          } else {
+            toast.success(`✅ Başarılı! ${allData.length} kayıt eklendi`, { id: loadingToast });
+            await load();
+          }
+        } catch (err: any) {
+          toast.error("Hata: " + err.message, { id: loadingToast });
+        } finally {
+          setImporting(false);
+        }
+      },
+    });
+    setConfirmOpen(true);
   };
 
-  const copyFromPreviousWeek = async () => {
-    if (!confirm("Geçen haftanın aynı gününden kopyalansın mı?")) return;
-    
-    setCopying(true);
-    setMsg("Kopyalanıyor...");
-    
-    try {
-      const currentDate = new Date(date + "T12:00:00");
-      const currentWeekday = currentDate.getDay();
-      
-      // 7 gün önceki aynı günü bul
-      const previousWeekDate = new Date(currentDate.getTime() - 7 * 864e5);
-      const previousDateKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(previousWeekDate);
-      
-      // Geçen haftanın verilerini çek
-      const { data: previousDuties, error: fetchError } = await sb
-        .from("duty_teachers")
-        .select("*")
-        .eq("date", previousDateKey);
-      
-      if (fetchError) throw fetchError;
-      
-      if (!previousDuties || previousDuties.length === 0) {
-        setMsg("⚠️ Geçen hafta aynı gün için veri bulunamadı.");
-        return;
-      }
-      
-      // Önce bugünkü verileri temizle
-      await sb.from("duty_teachers").delete().eq("date", date);
-      
-      // Yeni verileri ekle
-      const newDuties = previousDuties.map((d: any) => ({
-        date: date,
-        name: d.name,
-        area: d.area,
-        note: d.note
-      }));
-      
-      const { error: insertError } = await sb.from("duty_teachers").insert(newDuties);
-      
-      if (insertError) throw insertError;
-      
-      setMsg(`✅ ${newDuties.length} kayıt kopyalandı (${previousDateKey}'den)`);
-      await load();
-    } catch (err: any) {
-      setMsg("Hata: " + err.message);
-    } finally {
-      setCopying(false);
-    }
+  const copyFromPreviousWeek = () => {
+    setConfirmData({
+      title: "Geçen Haftadan Kopyala",
+      desc: `Bu tarih (${date}) için nöbetçiler, geçen haftanın aynı gününden kopyalanacak.\n\nMevcut kayıtlar silinecek.`,
+      confirmText: "Kopyala",
+      action: async () => {
+        setConfirmOpen(false);
+        setCopying(true);
+        const loadingToast = toast.loading("Kopyalanıyor...");
+
+        try {
+          const currentDate = new Date(date + "T12:00:00");
+
+          // 7 gün önceki aynı günü bul
+          const previousWeekDate = new Date(currentDate.getTime() - 7 * 864e5);
+          const previousDateKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(previousWeekDate);
+
+          // Geçen haftanın verilerini çek
+          const { data: previousDuties, error: fetchError } = await sb
+            .from("duty_teachers")
+            .select("*")
+            .eq("date", previousDateKey);
+
+          if (fetchError) throw fetchError;
+
+          if (!previousDuties || previousDuties.length === 0) {
+            toast.error("⚠️ Geçen hafta aynı gün için veri bulunamadı.", { id: loadingToast });
+            return;
+          }
+
+          // Önce bugünkü verileri temizle
+          await sb.from("duty_teachers").delete().eq("date", date);
+
+          // Yeni verileri ekle
+          const newDuties = previousDuties.map((d: any) => ({
+            date: date,
+            name: d.name,
+            area: d.area,
+            note: d.note,
+          }));
+
+          const { error: insertError } = await sb.from("duty_teachers").insert(newDuties);
+
+          if (insertError) throw insertError;
+
+          toast.success(`✅ ${newDuties.length} kayıt kopyalandı`, { id: loadingToast });
+          await load();
+        } catch (err: any) {
+          toast.error("Hata: " + err.message, { id: loadingToast });
+        } finally {
+          setCopying(false);
+        }
+      },
+    });
+    setConfirmOpen(true);
   };
 
   return (
@@ -166,9 +204,7 @@ function DutiesInner({ profile }: any) {
           </div>
         </div>
         <a href="/admin/duties/template">
-          <SecondaryButton type="button">
-            📋 Haftalık Şablon
-          </SecondaryButton>
+          <SecondaryButton type="button">📋 Haftalık Şablon</SecondaryButton>
         </a>
       </div>
 
@@ -220,11 +256,7 @@ function DutiesInner({ profile }: any) {
           <PrimaryButton type="button" onClick={add} disabled={!name.trim()}>
             + Ekle
           </PrimaryButton>
-          {msg ? (
-            <div className="text-sm" style={{ color: BRAND.colors.warn }}>
-              • {msg}
-            </div>
-          ) : null}
+          {/* msg removed */}
         </div>
       </div>
 
@@ -250,6 +282,16 @@ function DutiesInner({ profile }: any) {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title={confirmData?.title || ""}
+        description={confirmData?.desc}
+        destructive={confirmData?.destructive}
+        confirmText={confirmData?.confirmText}
+        onConfirm={confirmData?.action || (() => { })}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </AdminShell>
   );
 }
