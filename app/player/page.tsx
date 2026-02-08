@@ -65,6 +65,14 @@ export default function PlayerPage() {
 
   const [isOffline, setIsOffline] = useState(false);
 
+  // Health state for watchdog/self-recovery
+  const [lastSuccessfulFetchAt, setLastSuccessfulFetchAt] = useState<number>(Date.now());
+  const [consecutiveFetchFailures, setConsecutiveFetchFailures] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [showConnectionOverlay, setShowConnectionOverlay] = useState(false);
+  const jsErrorCountRef = useRef(0);
+  const jsErrorTimestampsRef = useRef<number[]>([]);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -84,11 +92,26 @@ export default function PlayerPage() {
   }, []);
 
   const loadBundle = async () => {
-    const r = await fetchPlayerBundle();
-    setBundle(r.bundle);
-    setFromCache(r.fromCache);
-    setLastSyncAt(r.bundle.generatedAt);
-    if (r.fromCache) setIsOffline(true);
+    try {
+      const r = await fetchPlayerBundle();
+      setBundle(r.bundle);
+      setFromCache(r.fromCache);
+      setLastSyncAt(r.bundle.generatedAt);
+
+      // Health state güncellemesi
+      if (!r.fromCache) {
+        setLastSuccessfulFetchAt(Date.now());
+        setConsecutiveFetchFailures(0);
+        setLastError(null);
+        setShowConnectionOverlay(false);
+      } else {
+        setIsOffline(true);
+      }
+    } catch (err) {
+      setConsecutiveFetchFailures((prev) => prev + 1);
+      setLastError(err instanceof Error ? err.message : String(err));
+      if (DEBUG) console.log(`🔴 Fetch failed: ${err}`);
+    }
   };
 
   useEffect(() => {
@@ -110,6 +133,108 @@ export default function PlayerPage() {
   }, []);
 
   useInterval(refreshWeather, 10 * 60_000);
+
+  // ============ WATCHDOG & SELF-RECOVERY ============
+
+  // Reload loop koruması: sessionStorage ile son reload zamanını kontrol et
+  const safeReload = useCallback(() => {
+    try {
+      const lastReloadStr = sessionStorage.getItem("player_last_reload_at");
+      const lastReloadAt = lastReloadStr ? parseInt(lastReloadStr, 10) : 0;
+      const now = Date.now();
+
+      // Son reload 2 dakikadan az ise tekrar reload yapma
+      if (now - lastReloadAt < 2 * 60 * 1000) {
+        if (DEBUG) console.log("🔒 Reload loop koruması: 2 dk içinde tekrar reload yapılmaz");
+        setShowConnectionOverlay(true);
+        return false;
+      }
+
+      sessionStorage.setItem("player_last_reload_at", String(now));
+      if (DEBUG) console.log("🔄 Safe reload başlatılıyor...");
+      window.location.reload();
+      return true;
+    } catch {
+      // sessionStorage erişim hatası
+      return false;
+    }
+  }, []);
+
+  // JS Error yakalama (unhandledrejection ve error)
+  useEffect(() => {
+    const handleError = () => {
+      const now = Date.now();
+      const tenMinutesAgo = now - 10 * 60 * 1000;
+
+      // Son 10 dakikadaki hataları filtrele
+      jsErrorTimestampsRef.current = jsErrorTimestampsRef.current.filter(t => t > tenMinutesAgo);
+      jsErrorTimestampsRef.current.push(now);
+      jsErrorCountRef.current = jsErrorTimestampsRef.current.length;
+
+      if (DEBUG) console.log(`🔴 JS Error count (10 dk): ${jsErrorCountRef.current}`);
+    };
+
+    const onError = () => handleError();
+    const onUnhandledRejection = () => handleError();
+
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onUnhandledRejection);
+
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onUnhandledRejection);
+    };
+  }, []);
+
+  // Watchdog timer (30 saniyede bir kontrol)
+  useEffect(() => {
+    const WATCHDOG_INTERVAL = 30 * 1000; // 30 saniye
+    const STALE_THRESHOLD = 5 * 60 * 1000; // 5 dakika
+    const MAX_FAILURES = 5;
+    const MAX_JS_ERRORS = 3;
+
+    const watchdog = setInterval(() => {
+      try {
+        const now = Date.now();
+        const timeSinceLastFetch = now - lastSuccessfulFetchAt;
+
+        // 1. Veri 5 dakikadan eski mi?
+        if (timeSinceLastFetch > STALE_THRESHOLD) {
+          if (DEBUG) console.log(`⚠️ Watchdog: Veri ${Math.round(timeSinceLastFetch / 1000)}s eski`);
+          setShowConnectionOverlay(true);
+          safeReload();
+          return;
+        }
+
+        // 2. Ardışık fetch hatası >= 5 mi?
+        if (consecutiveFetchFailures >= MAX_FAILURES) {
+          if (DEBUG) console.log(`⚠️ Watchdog: ${consecutiveFetchFailures} ardışık fetch hatası`);
+          setShowConnectionOverlay(true);
+          safeReload();
+          return;
+        }
+
+        // 3. Son 10 dk'da >= 3 JS hatası mı?
+        if (jsErrorCountRef.current >= MAX_JS_ERRORS) {
+          if (DEBUG) console.log(`⚠️ Watchdog: ${jsErrorCountRef.current} JS hatası (10 dk)`);
+          safeReload();
+          return;
+        }
+
+        // Sağlıklı: overlay'i kapat
+        if (showConnectionOverlay && consecutiveFetchFailures === 0) {
+          setShowConnectionOverlay(false);
+        }
+      } catch (err) {
+        if (DEBUG) console.log(`🔴 Watchdog error: ${err}`);
+      }
+    }, WATCHDOG_INTERVAL);
+
+    return () => clearInterval(watchdog);
+  }, [lastSuccessfulFetchAt, consecutiveFetchFailures, showConnectionOverlay, safeReload]);
+
+  // ============ END WATCHDOG ============
+
 
   const activeVideos = useMemo(() => {
     const list = bundle?.youtubeVideos ?? [];
@@ -327,6 +452,17 @@ export default function PlayerPage() {
 
   return (
     <div className="min-h-screen w-screen flex flex-col overflow-hidden" style={{ background: BRAND.colors.bg }}>
+      {/* Connection overlay */}
+      {showConnectionOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }}>
+          <div className="text-center text-white p-8 rounded-2xl" style={{ background: BRAND.colors.panel }}>
+            <div className="text-4xl mb-4">🔄</div>
+            <div className="text-2xl font-bold mb-2">Bağlantı Sorunu</div>
+            <div className="text-lg opacity-80">Yeniden deneniyor...</div>
+            {lastError && <div className="text-sm mt-4 opacity-60">{lastError}</div>}
+          </div>
+        </div>
+      )}
       <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.topPadding}`}>
         <HeaderBar now={now} isOffline={isOffline || fromCache} lastSyncAt={lastSyncAt} />
       </div>
