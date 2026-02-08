@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BRAND } from "@/lib/branding";
 import { PLAYER_LAYOUT } from "@/lib/layoutConfig";
-import { fetchPlayerBundle } from "@/lib/playerApi";
 import { fetchWeatherNow } from "@/lib/weather";
 import { computeNowStatus, pickSlotsForToday } from "@/lib/schedule";
 import { HeaderBar } from "@/components/player/HeaderBar";
+import { usePlayerBundle } from "@/hooks/usePlayerBundle";
+import { usePlayerWatchdog } from "@/hooks/usePlayerWatchdog";
 import { LeftPanel } from "@/components/player/LeftPanel";
 import { CardCarousel, buildCards } from "@/components/player/CardCarousel";
 import { TickerBar } from "@/components/player/TickerBar";
@@ -52,84 +53,41 @@ function inWindow(a: Announcement, now: Date) {
 }
 
 export default function PlayerPage() {
+  // State management moved to usePlayerBundle hook
+  const {
+    bundle,
+    fromCache,
+    lastSyncAt,
+    isOffline,
+    cacheTimestamp,
+    isCacheStale,
+    lastSuccessfulFetchAt,
+    consecutiveFetchFailures,
+    lastError,
+    refreshBundle
+  } = usePlayerBundle();
+
+  // Local UI state
   const [mounted, setMounted] = useState(false);
   const [now, setNow] = useState(() => new Date());
-  const [bundle, setBundle] = useState<PlayerBundle | null>(null);
-  const [fromCache, setFromCache] = useState(false);
-  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
+
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [cardIndex, setCardIndex] = useState(0);
   const [announcementIndex, setAnnouncementIndex] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
   const [mode, setMode] = useState<"video" | "image" | "text">("text");
 
-  const [isOffline, setIsOffline] = useState(false);
-  const [cacheTimestamp, setCacheTimestamp] = useState<number | null>(null);
-  const [isCacheStale, setIsCacheStale] = useState(false);
-
-  // Health state for watchdog/self-recovery
-  const [lastSuccessfulFetchAt, setLastSuccessfulFetchAt] = useState<number>(Date.now());
-  const [consecutiveFetchFailures, setConsecutiveFetchFailures] = useState(0);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [showConnectionOverlay, setShowConnectionOverlay] = useState(false);
-  const jsErrorCountRef = useRef(0);
-  const jsErrorTimestampsRef = useRef<number[]>([]);
+  // Watchdog & Self-Recovery Hook
+  const { showConnectionOverlay, dailyLimitReached } = usePlayerWatchdog(
+    lastSuccessfulFetchAt,
+    consecutiveFetchFailures
+  );
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useInterval(() => setNow(new Date()), 1000);
-
-  useEffect(() => {
-    const on = () => setIsOffline(false);
-    const off = () => setIsOffline(true);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    setIsOffline(!navigator.onLine);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
-
-  const loadBundle = async () => {
-    try {
-      const r = await fetchPlayerBundle();
-      setBundle(r.bundle);
-      setFromCache(r.fromCache);
-      setLastSyncAt(r.bundle.generatedAt);
-
-      // Health state güncellemesi
-      if (!r.fromCache) {
-        setLastSuccessfulFetchAt(Date.now());
-        setConsecutiveFetchFailures(0);
-        setLastError(null);
-        setShowConnectionOverlay(false);
-        setIsOffline(false);
-        setCacheTimestamp(null);
-        setIsCacheStale(false);
-      } else {
-        setIsOffline(true);
-        if (r.cacheTimestamp) setCacheTimestamp(r.cacheTimestamp);
-        if (r.isStale) setIsCacheStale(true);
-      }
-    } catch (err) {
-      setConsecutiveFetchFailures((prev) => prev + 1);
-      setLastError(err instanceof Error ? err.message : String(err));
-      if (DEBUG) console.log(`🔴 Fetch failed: ${err}`);
-    }
-  };
-
-  useEffect(() => {
-    loadBundle();
-  }, []);
-
-  const refreshBundle = useCallback(() => {
-    loadBundle();
-  }, []);
-
-  useInterval(refreshBundle, 60_000);
 
   useEffect(() => {
     fetchWeatherNow().then(setWeather).catch(() => { });
@@ -141,126 +99,60 @@ export default function PlayerPage() {
 
   useInterval(refreshWeather, 10 * 60_000);
 
-  // ============ WATCHDOG & SELF-RECOVERY ============
 
-  // Reload loop koruması: sessionStorage ile son reload zamanını kontrol et
-  const safeReload = useCallback(() => {
-    try {
-      const lastReloadStr = sessionStorage.getItem("player_last_reload_at");
-      const lastReloadAt = lastReloadStr ? parseInt(lastReloadStr, 10) : 0;
-      const now = Date.now();
-
-      // Son reload 2 dakikadan az ise tekrar reload yapma
-      if (now - lastReloadAt < 2 * 60 * 1000) {
-        if (DEBUG) console.log("🔒 Reload loop koruması: 2 dk içinde tekrar reload yapılmaz");
-        setShowConnectionOverlay(true);
-        return false;
-      }
-
-      sessionStorage.setItem("player_last_reload_at", String(now));
-      if (DEBUG) console.log("🔄 Safe reload başlatılıyor...");
-      window.location.reload();
-      return true;
-    } catch {
-      // sessionStorage erişim hatası
-      return false;
-    }
-  }, []);
-
-  // JS Error yakalama (unhandledrejection ve error)
-  useEffect(() => {
-    const handleError = () => {
-      const now = Date.now();
-      const tenMinutesAgo = now - 10 * 60 * 1000;
-
-      // Son 10 dakikadaki hataları filtrele
-      jsErrorTimestampsRef.current = jsErrorTimestampsRef.current.filter(t => t > tenMinutesAgo);
-      jsErrorTimestampsRef.current.push(now);
-      jsErrorCountRef.current = jsErrorTimestampsRef.current.length;
-
-      if (DEBUG) console.log(`🔴 JS Error count (10 dk): ${jsErrorCountRef.current}`);
-    };
-
-    const onError = () => handleError();
-    const onUnhandledRejection = () => handleError();
-
-    window.addEventListener("error", onError);
-    window.addEventListener("unhandledrejection", onUnhandledRejection);
-
-    return () => {
-      window.removeEventListener("error", onError);
-      window.removeEventListener("unhandledrejection", onUnhandledRejection);
-    };
-  }, []);
-
-  // Watchdog timer (30 saniyede bir kontrol)
-  useEffect(() => {
-    const WATCHDOG_INTERVAL = 30 * 1000; // 30 saniye
-    const STALE_THRESHOLD = 5 * 60 * 1000; // 5 dakika
-    const MAX_FAILURES = 5;
-    const MAX_JS_ERRORS = 3;
-
-    const watchdog = setInterval(() => {
-      try {
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastSuccessfulFetchAt;
-
-        // 1. Veri 5 dakikadan eski mi?
-        if (timeSinceLastFetch > STALE_THRESHOLD) {
-          if (DEBUG) console.log(`⚠️ Watchdog: Veri ${Math.round(timeSinceLastFetch / 1000)}s eski`);
-          setShowConnectionOverlay(true);
-          safeReload();
-          return;
-        }
-
-        // 2. Ardışık fetch hatası >= 5 mi?
-        if (consecutiveFetchFailures >= MAX_FAILURES) {
-          if (DEBUG) console.log(`⚠️ Watchdog: ${consecutiveFetchFailures} ardışık fetch hatası`);
-          setShowConnectionOverlay(true);
-          safeReload();
-          return;
-        }
-
-        // 3. Son 10 dk'da >= 3 JS hatası mı?
-        if (jsErrorCountRef.current >= MAX_JS_ERRORS) {
-          if (DEBUG) console.log(`⚠️ Watchdog: ${jsErrorCountRef.current} JS hatası (10 dk)`);
-          safeReload();
-          return;
-        }
-
-        // Sağlıklı: overlay'i kapat
-        if (showConnectionOverlay && consecutiveFetchFailures === 0) {
-          setShowConnectionOverlay(false);
-        }
-      } catch (err) {
-        if (DEBUG) console.log(`🔴 Watchdog error: ${err}`);
-      }
-    }, WATCHDOG_INTERVAL);
-
-    return () => clearInterval(watchdog);
-  }, [lastSuccessfulFetchAt, consecutiveFetchFailures, showConnectionOverlay, safeReload]);
-
-  // ============ END WATCHDOG ============
-
-  // ============ DAILY CONTROLLED REFRESH (03:00) ============
+  // ============ DAILY CONTROLLED REFRESH (03:00 ISTANBUL) ============
   const [showDailyRefreshOverlay, setShowDailyRefreshOverlay] = useState(false);
 
   useEffect(() => {
-    const DAILY_REFRESH_HOUR = 3; // 03:00 local time
+    const DAILY_REFRESH_HOUR = 3; // 03:00 Istanbul time
     const DAILY_RELOAD_KEY = "obe_last_daily_reload_date";
 
-    // DEV test için: DEBUG true ise 2 dakika sonra tetikle
-    // const DEV_TEST_DELAY = DEBUG ? 2 * 60 * 1000 : null;
+    // 1. İstanbul'a göre BUGÜN tarih stringi (YYYY-MM-DD)
+    const getTodayDateKeyTR = () => {
+      // en-CA formatı: YYYY-MM-DD
+      return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date());
+    };
 
-    const getTodayDateString = () => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    // 2. Bir sonraki İstanbul 03:00'a kaç ms var?
+    const getMsUntilNextIstanbulHour = (targetHour: number) => {
+      const now = new Date();
+
+      // İstanbul'daki şu anki zamanı parçalarına ayır
+      const fmt = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Europe/Istanbul",
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric',
+        hourCycle: 'h23'
+      });
+
+      const parts = fmt.formatToParts(now);
+      const getPart = (type: string) => parseInt(parts.find(p => p.type === type)?.value || "0", 10);
+
+      const trYear = getPart('year');
+      const trMonth = getPart('month') - 1; // JS months are 0-indexed
+      const trDay = getPart('day');
+      const trHour = getPart('hour');
+      const trMinute = getPart('minute');
+      const trSecond = getPart('second');
+
+      // "Sanal" tarih objeleri oluştur (Cihazın yerel saatiyle, ama İstanbul değerleriyle)
+      // Bu sayede timezone farklarından etkilenmeden sadece süre farkını (delta) buluruz.
+      const trNowVirtual = new Date(trYear, trMonth, trDay, trHour, trMinute, trSecond);
+      const trTargetVirtual = new Date(trYear, trMonth, trDay, targetHour, 0, 0);
+
+      // Eğer hedef saat bugün geçtiyse, yarına planla
+      if (trNowVirtual.getTime() >= trTargetVirtual.getTime()) {
+        trTargetVirtual.setDate(trTargetVirtual.getDate() + 1);
+      }
+
+      return trTargetVirtual.getTime() - trNowVirtual.getTime();
     };
 
     const hasReloadedToday = () => {
       try {
         const lastDate = localStorage.getItem(DAILY_RELOAD_KEY);
-        return lastDate === getTodayDateString();
+        // İstanbul tarihine göre kontrol et
+        return lastDate === getTodayDateKeyTR();
       } catch {
         return false;
       }
@@ -268,43 +160,29 @@ export default function PlayerPage() {
 
     const markReloadedToday = () => {
       try {
-        localStorage.setItem(DAILY_RELOAD_KEY, getTodayDateString());
+        localStorage.setItem(DAILY_RELOAD_KEY, getTodayDateKeyTR());
       } catch { }
     };
 
-    const getMillisecondsUntilTarget = () => {
-      const now = new Date();
-      const target = new Date();
-      target.setHours(DAILY_REFRESH_HOUR, 0, 0, 0);
-
-      // Eğer hedef saat geçtiyse, yarın 03:00'ı hedefle
-      if (now >= target) {
-        target.setDate(target.getDate() + 1);
-      }
-
-      return target.getTime() - now.getTime();
-    };
-
     const scheduleDailyRefresh = () => {
-      // Bugün zaten reload yapıldıysa planla ama tekrar yapma
-      const msUntilRefresh = getMillisecondsUntilTarget();
+      const msUntilRefresh = getMsUntilNextIstanbulHour(DAILY_REFRESH_HOUR);
 
       if (DEBUG) {
         const hours = Math.floor(msUntilRefresh / (1000 * 60 * 60));
         const minutes = Math.floor((msUntilRefresh % (1000 * 60 * 60)) / (1000 * 60));
-        console.log(`🕐 Daily refresh scheduled in ${hours}h ${minutes}m`);
+        console.log(`🕐 Daily refresh scheduled in ${hours}h ${minutes}m (Istanbul Time)`);
       }
 
       const timerId = setTimeout(() => {
-        // Aynı gün içinde tekrar reload yapma
+        // Aynı gün (TR saatiyle) içinde tekrar reload yapma
         if (hasReloadedToday()) {
           if (DEBUG) console.log("🔒 Daily refresh: Bugün zaten yapıldı, atlanıyor");
-          // Yarını planla
+          // Yarını planla ve çık
           scheduleDailyRefresh();
           return;
         }
 
-        // 10 saniye önce overlay göster
+        // 10 saniye sonra reload yap (önce overlay göster)
         setShowDailyRefreshOverlay(true);
 
         setTimeout(() => {
@@ -542,10 +420,21 @@ export default function PlayerPage() {
       {/* Connection overlay */}
       {showConnectionOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }}>
-          <div className="text-center text-white p-8 rounded-2xl" style={{ background: BRAND.colors.panel }}>
-            <div className="text-4xl mb-4">🔄</div>
-            <div className="text-2xl font-bold mb-2">Bağlantı Sorunu</div>
-            <div className="text-lg opacity-80">Yeniden deneniyor...</div>
+          <div className="text-center text-white p-8 rounded-2xl max-w-lg" style={{ background: BRAND.colors.panel }}>
+            <div className="text-4xl mb-4">{dailyLimitReached ? "🚫" : "🔄"}</div>
+            <div className="text-2xl font-bold mb-2">
+              {dailyLimitReached ? "Yenileme Durduruldu" : "Bağlantı Sorunu"}
+            </div>
+            <div className="text-lg opacity-80">
+              {dailyLimitReached
+                ? "Sistem kendini yenilemeyi denedi, ancak çok sık tekrarlandığı için durduruldu."
+                : "Yeniden deneniyor..."}
+            </div>
+            {dailyLimitReached && (
+              <div className="text-base mt-4 p-3 rounded-lg" style={{ background: BRAND.colors.bg }}>
+                ⚠️ İnternet bağlantısı ve Supabase erişimi kontrol edilsin.
+              </div>
+            )}
             {lastError && <div className="text-sm mt-4 opacity-60">{lastError}</div>}
           </div>
         </div>

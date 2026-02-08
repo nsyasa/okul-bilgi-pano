@@ -83,9 +83,15 @@ export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: nu
         <div className="text-3xl font-bold text-white mt-1" suppressHydrationWarning>
           {dateStr}
         </div>
+
+        {/* Teşhis Bilgisi (Her zaman görünür) */}
+        <div className="text-xs mt-2 font-mono text-white/50 tabular-nums">
+          Son Güncelleme: {syncStr || "--:--"} • Kaynak: {props.isOffline ? "Cache" : "Canlı"}
+        </div>
+
         {props.isOffline && (
-          <div className="text-lg mt-2" style={{ color: BRAND.colors.warn }}>
-            ⚠ Çevrimdışı
+          <div className="text-lg mt-1 font-bold animate-pulse" style={{ color: BRAND.colors.warn }}>
+            ⚠ Çevrimdışı Mod
           </div>
         )}
       </div>
