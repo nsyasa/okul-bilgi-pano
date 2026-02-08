@@ -242,6 +242,86 @@ export default function PlayerPage() {
 
   // ============ END WATCHDOG ============
 
+  // ============ DAILY CONTROLLED REFRESH (03:00) ============
+  const [showDailyRefreshOverlay, setShowDailyRefreshOverlay] = useState(false);
+
+  useEffect(() => {
+    const DAILY_REFRESH_HOUR = 3; // 03:00 local time
+    const DAILY_RELOAD_KEY = "obe_last_daily_reload_date";
+
+    // DEV test için: DEBUG true ise 2 dakika sonra tetikle
+    // const DEV_TEST_DELAY = DEBUG ? 2 * 60 * 1000 : null;
+
+    const getTodayDateString = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+
+    const hasReloadedToday = () => {
+      try {
+        const lastDate = localStorage.getItem(DAILY_RELOAD_KEY);
+        return lastDate === getTodayDateString();
+      } catch {
+        return false;
+      }
+    };
+
+    const markReloadedToday = () => {
+      try {
+        localStorage.setItem(DAILY_RELOAD_KEY, getTodayDateString());
+      } catch { }
+    };
+
+    const getMillisecondsUntilTarget = () => {
+      const now = new Date();
+      const target = new Date();
+      target.setHours(DAILY_REFRESH_HOUR, 0, 0, 0);
+
+      // Eğer hedef saat geçtiyse, yarın 03:00'ı hedefle
+      if (now >= target) {
+        target.setDate(target.getDate() + 1);
+      }
+
+      return target.getTime() - now.getTime();
+    };
+
+    const scheduleDailyRefresh = () => {
+      // Bugün zaten reload yapıldıysa planla ama tekrar yapma
+      const msUntilRefresh = getMillisecondsUntilTarget();
+
+      if (DEBUG) {
+        const hours = Math.floor(msUntilRefresh / (1000 * 60 * 60));
+        const minutes = Math.floor((msUntilRefresh % (1000 * 60 * 60)) / (1000 * 60));
+        console.log(`🕐 Daily refresh scheduled in ${hours}h ${minutes}m`);
+      }
+
+      const timerId = setTimeout(() => {
+        // Aynı gün içinde tekrar reload yapma
+        if (hasReloadedToday()) {
+          if (DEBUG) console.log("🔒 Daily refresh: Bugün zaten yapıldı, atlanıyor");
+          // Yarını planla
+          scheduleDailyRefresh();
+          return;
+        }
+
+        // 10 saniye önce overlay göster
+        setShowDailyRefreshOverlay(true);
+
+        setTimeout(() => {
+          markReloadedToday();
+          if (DEBUG) console.log("🔄 Daily refresh: Sayfa yenileniyor...");
+          window.location.reload();
+        }, 10 * 1000);
+      }, msUntilRefresh);
+
+      return timerId;
+    };
+
+    const timerId = scheduleDailyRefresh();
+    return () => clearTimeout(timerId);
+  }, []);
+
+  // ============ END DAILY REFRESH ============
 
   const activeVideos = useMemo(() => {
     const list = bundle?.youtubeVideos ?? [];
@@ -487,6 +567,18 @@ export default function PlayerPage() {
           {isCacheStale && (
             <div className="text-xs mt-1">⚠️ Veri 24 saatten eski</div>
           )}
+        </div>
+      )}
+
+      {/* Daily refresh overlay */}
+      {showDailyRefreshOverlay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.85)" }}>
+          <div className="text-center text-white p-8 rounded-2xl" style={{ background: BRAND.colors.panel }}>
+            <div className="text-4xl mb-4">🔄</div>
+            <div className="text-2xl font-bold mb-2">Sistem Yenileniyor</div>
+            <div className="text-lg opacity-80">Lütfen bekleyin...</div>
+            <div className="text-sm mt-4 opacity-60">Günlük bakım işlemi</div>
+          </div>
         </div>
       )}
       <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.topPadding}`}>
