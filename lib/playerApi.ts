@@ -1,4 +1,4 @@
-import { supabaseBrowser } from "./supabaseBrowser";
+import { supabasePlayer } from "./supabasePlayer";
 import type { PlayerBundle } from "@/types/player";
 import { saveCache, loadCache } from "./storage";
 
@@ -33,7 +33,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
   const year = parseInt(parts[0]);
   const month = parseInt(parts[1]) - 1; // JS months are 0-indexed
   const day = parseInt(parts[2]);
-  
+
   // UTC'de tarihi oluştur ve Türkiye saatine çevir
   const todayUTC = new Date(Date.UTC(year, month, day, 12, 0, 0));
   const todayWeekday = todayUTC.getDay(); // 0=Pazar, 1=Pzt, 2=Sal, 3=Çar, 4=Per, 5=Cuma, 6=Cmt
@@ -41,7 +41,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
   // Son 8 hafta içinde aynı günü ara (56 gün geriye)
   const minDate = new Date(todayUTC.getTime() - 56 * 864e5);
   const minDateKey = minDate.toISOString().split("T")[0];
-  
+
   const { data: previousDuties, error: prevErr } = await sb
     .from("duty_teachers")
     .select("*")
@@ -64,7 +64,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
     const dutyDay = parseInt(dutyParts[2]);
     const dutyDateUTC = new Date(Date.UTC(dutyYear, dutyMonth, dutyDay, 12, 0, 0));
     const dutyWeekday = dutyDateUTC.getDay();
-    
+
     if (dutyWeekday === todayWeekday) {
       // Bu tarihteki tüm öğretmenleri çek
       const { data: sameDayDuties, error: sameErr } = await sb
@@ -74,7 +74,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
         .order("name", { ascending: true });
 
       if (sameErr) throw sameErr;
-      
+
       return sameDayDuties || [];
     }
   }
@@ -83,7 +83,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string): Promise<any[]> {
 }
 
 export async function fetchPlayerBundle(): Promise<{ bundle: PlayerBundle; fromCache: boolean }> {
-  const sb = supabaseBrowser();
+  const sb = supabasePlayer();
   const now = new Date();
   const dateKey = todayKeyTR(now);
 
