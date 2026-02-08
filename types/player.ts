@@ -94,6 +94,14 @@ export type WeatherNow = {
   updatedAt: number; // epoch ms
 };
 
+export type LessonScheduleEntry = {
+  id: string;
+  teacher_name: string;
+  day_of_week: number; // 1=Pazartesi, 5=Cuma
+  lesson_number: number; // 1-10
+  class_name: string | null;
+};
+
 export type PlayerRotationSettings = {
   enabled: boolean;
   videoSeconds: number;
@@ -113,4 +121,6 @@ export type PlayerBundle = {
   overrides: ScheduleOverride[];
   schoolInfo: SchoolInfo[];
   specialDates: SpecialDate[];
+  lessonSchedule: LessonScheduleEntry[];
 };
+

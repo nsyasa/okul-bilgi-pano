@@ -1,18 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BRAND } from "@/lib/branding";
 import { PLAYER_LAYOUT } from "@/lib/layoutConfig";
 import { fetchWeatherNow } from "@/lib/weather";
-import { computeNowStatus, pickSlotsForToday } from "@/lib/schedule";
+import { computeNowStatus, pickSlotsForToday, getCurrentLessonNumber } from "@/lib/schedule";
 import { HeaderBar } from "@/components/player/HeaderBar";
 import { usePlayerBundle } from "@/hooks/usePlayerBundle";
 import { usePlayerWatchdog } from "@/hooks/usePlayerWatchdog";
+import { usePreviewTime } from "@/hooks/usePreviewTime";
 import { LeftPanel } from "@/components/player/LeftPanel";
 import { CardCarousel, buildCards } from "@/components/player/CardCarousel";
 import { TickerBar } from "@/components/player/TickerBar";
-import { AnnouncementSidebar } from "@/components/player/AnnouncementSidebar";
-import type { PlayerBundle, WeatherNow, YouTubeVideo, PlayerRotationSettings, Announcement } from "@/types/player";
+import type { PlayerBundle, WeatherNow, YouTubeVideo, PlayerRotationSettings, Announcement, TickerItem, LessonScheduleEntry, BellSlot } from "@/types/player";
 
 const DEBUG = false;
 
@@ -52,7 +52,46 @@ function inWindow(a: Announcement, now: Date) {
   return true;
 }
 
-export default function PlayerPage() {
+function formatTtl(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+// Preview Banner Component
+function PreviewBanner({
+  previewTimeStr,
+  remainingTtl,
+  onExit
+}: {
+  previewTimeStr: string;
+  remainingTtl: number;
+  onExit: () => void;
+}) {
+  return (
+    <div
+      className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-4 py-2 px-4"
+      style={{ background: "linear-gradient(to right, #059669, #0d9488)" }}
+    >
+      <div className="flex items-center gap-2 text-white text-sm font-medium">
+        <span className="text-lg">🕐</span>
+        <span>Önizleme Modu:</span>
+        <span className="font-mono bg-white/20 px-2 py-0.5 rounded">{previewTimeStr}</span>
+        <span className="opacity-70">•</span>
+        <span className="opacity-90">Kalan: <span className="font-mono">{formatTtl(remainingTtl)}</span></span>
+      </div>
+      <button
+        onClick={onExit}
+        className="px-3 py-1 rounded-lg text-sm font-medium bg-white/20 hover:bg-white/30 text-white transition-all flex items-center gap-1"
+      >
+        <span>✕</span>
+        <span>Çık</span>
+      </button>
+    </div>
+  );
+}
+
+function PlayerContent() {
   // State management moved to usePlayerBundle hook
   const {
     bundle,
@@ -67,13 +106,19 @@ export default function PlayerPage() {
     refreshBundle
   } = usePlayerBundle();
 
+  // Preview time hook
+  const preview = usePreviewTime();
+
   // Local UI state
   const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(() => new Date());
+  const [realNow, setRealNow] = useState(() => new Date());
+
+  // Use effectiveNow from preview if active, otherwise use realNow
+  const now = preview.isActive ? preview.effectiveNow : realNow;
 
   const [weather, setWeather] = useState<WeatherNow | null>(null);
   const [cardIndex, setCardIndex] = useState(0);
-  const [announcementIndex, setAnnouncementIndex] = useState(0);
+
   const [imageIndex, setImageIndex] = useState(0);
   const [mode, setMode] = useState<"video" | "image" | "text">("text");
 
@@ -87,7 +132,7 @@ export default function PlayerPage() {
     setMounted(true);
   }, []);
 
-  useInterval(() => setNow(new Date()), 1000);
+  useInterval(() => setRealNow(new Date()), 1000);
 
   useEffect(() => {
     fetchWeatherNow().then(setWeather).catch(() => { });
@@ -104,6 +149,9 @@ export default function PlayerPage() {
   const [showDailyRefreshOverlay, setShowDailyRefreshOverlay] = useState(false);
 
   useEffect(() => {
+    // Skip daily refresh logic during preview mode
+    if (preview.isActive) return;
+
     const DAILY_REFRESH_HOUR = 3; // 03:00 Istanbul time
     const DAILY_RELOAD_KEY = "obe_last_daily_reload_date";
 
@@ -197,7 +245,7 @@ export default function PlayerPage() {
 
     const timerId = scheduleDailyRefresh();
     return () => clearTimeout(timerId);
-  }, []);
+  }, [preview.isActive]);
 
   // ============ END DAILY REFRESH ============
 
@@ -248,9 +296,9 @@ export default function PlayerPage() {
   }, [imageAnnouncements]);
 
   const textAnnouncements = useMemo(() => {
-    if (bigAnnouncement) return [bigAnnouncement];
-    return smallAnnouncements.filter((a) => !a.image_url && !(a.image_urls?.length));
-  }, [smallAnnouncements, bigAnnouncement]);
+    // Küçük duyurular ticker'a taşındı. Burada sadece Ana Duyuru (Big) varsa gösterilir.
+    return bigAnnouncement ? [bigAnnouncement] : [];
+  }, [bigAnnouncement]);
 
   const rotation = useMemo<PlayerRotationSettings>(() => {
     return (
@@ -289,12 +337,7 @@ export default function PlayerPage() {
 
   useInterval(rotateCards, Math.max(5, rotation.textSeconds || 10) * 1000);
 
-  const rotateAnnouncements = useCallback(() => {
-    if (!activeAnnouncements.length) return;
-    setAnnouncementIndex((x) => (x + 1) % activeAnnouncements.length);
-  }, [activeAnnouncements.length]);
 
-  useInterval(rotateAnnouncements, Math.max(5, rotation.textSeconds || 10) * 1000);
 
   const rotateImages = useCallback(() => {
     if (imageUrls.length < 2) return; // 0 veya 1 resimde döngü gereksiz
@@ -325,9 +368,9 @@ export default function PlayerPage() {
     }
   }, [mode, imageUrls.length]);
 
-  const status = useMemo(() => {
+  const statusData = useMemo(() => {
     const b = bundle;
-    if (!b) return { state: "closed" as const, nextInSec: null as number | null, nextLabel: null as string | null };
+    if (!b) return { state: "closed" as const, nextInSec: null as number | null, nextLabel: null as string | null, slots: [] as BellSlot[], currentLessonNumber: null as number | null };
 
     const dateKey = todayKeyTR(nowTR);
     const weekday = nowTR.getDay();
@@ -340,16 +383,77 @@ export default function PlayerPage() {
     });
 
     const st = computeNowStatus(nowTR, picked.slots);
+    const lessonNum = getCurrentLessonNumber(nowTR, picked.slots);
+
     return {
       state: st.state,
       nextInSec: st.nextInSec ?? null,
       nextLabel: st.nextLabel ?? null,
+      slots: picked.slots,
+      currentLessonNumber: lessonNum,
     };
   }, [bundle, nowTR]);
 
-  const publishedAnnouncements = useMemo(() => {
-    return smallAnnouncements;
-  }, [smallAnnouncements]);
+  const status = statusData;
+
+  // Sabit sınıf listesi - 5A'dan 12E'ye
+  const ALL_CLASSES = [
+    "5-A", "5-B",
+    "6-A", "6-B",
+    "7-A", "7-B",
+    "8-A", "8-B",
+    "9-A", "9-B", "9-C", "9-D",
+    "10-A", "10-B", "10-C", "10-D",
+    "11-A", "11-B", "11-C", "11-D",
+    "12-A", "12-B", "12-C", "12-D", "12-E",
+  ];
+
+  // Şu anki ders için sınıf/öğretmen listesi (sabit sıralı)
+  const currentClasses = useMemo(() => {
+    const lessonNum = statusData.currentLessonNumber;
+    const weekday = nowTR.getDay(); // 0=Pazar, 1=Pzt, ...
+    const schedule = bundle?.lessonSchedule ?? [];
+
+    // day_of_week: 1=Pazartesi, 5=Cuma
+    const dayOfWeek = weekday;
+
+    // Sınıf adını normalize et (5A -> 5-A, 5-A -> 5-A)
+    const normalize = (name: string) => {
+      const match = name.match(/^(\d+)-?([A-Za-z])$/);
+      if (match) return `${match[1]}-${match[2].toUpperCase()}`;
+      return name;
+    };
+
+    // Ders saatindeyse veritabanından öğretmenleri çek
+    const teacherMap = new Map<string, string>();
+    if (lessonNum && weekday >= 1 && weekday <= 5) {
+      for (const entry of schedule) {
+        if (entry.day_of_week === dayOfWeek && entry.lesson_number === lessonNum && entry.class_name) {
+          const key = normalize(entry.class_name);
+          teacherMap.set(key, entry.teacher_name);
+        }
+      }
+    }
+
+    // Sabit sınıf listesiyle eşleştir
+    return ALL_CLASSES.map((className) => ({
+      class_name: className,
+      teacher_name: teacherMap.get(className) || "",
+    }));
+  }, [statusData.currentLessonNumber, nowTR, bundle?.lessonSchedule]);
+
+  const combinedTicker = useMemo(() => {
+    const t = (bundle?.ticker ?? []) as TickerItem[];
+    const a = smallAnnouncements.map((x) => ({
+      id: `ann-${x.id}`,
+      text: x.title, // Sadece başlık
+      priority: x.priority ?? 50,
+      is_active: true,
+      start_at: x.start_at,
+      end_at: x.end_at,
+    })) as TickerItem[];
+    return [...t, ...a];
+  }, [bundle?.ticker, smallAnnouncements]);
 
   useEffect(() => {
     const order: Array<"video" | "image" | "text"> = ["video", "image", "text"];
@@ -417,6 +521,15 @@ export default function PlayerPage() {
 
   return (
     <div className="min-h-screen w-screen flex flex-col overflow-hidden" style={{ background: BRAND.colors.bg }}>
+      {/* Preview Mode Banner */}
+      {preview.isActive && (
+        <PreviewBanner
+          previewTimeStr={preview.previewTimeStr}
+          remainingTtl={preview.remainingTtl}
+          onExit={preview.exitPreview}
+        />
+      )}
+
       {/* Connection overlay */}
       {showConnectionOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }}>
@@ -443,7 +556,7 @@ export default function PlayerPage() {
       {/* Offline cache mode indicator */}
       {fromCache && !showConnectionOverlay && (
         <div className="fixed top-4 right-4 z-40 px-4 py-2 rounded-lg text-sm"
-          style={{ background: isCacheStale ? "#dc2626" : "#f59e0b", color: "white" }}>
+          style={{ background: isCacheStale ? "#dc2626" : "#f59e0b", color: "white", marginTop: preview.isActive ? "40px" : "0" }}>
           <div className="flex items-center gap-2">
             <span>📡</span>
             <span>Çevrimdışı Mod</span>
@@ -470,11 +583,11 @@ export default function PlayerPage() {
           </div>
         </div>
       )}
-      <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.topPadding}`}>
+      <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.topPadding}`} style={{ marginTop: preview.isActive ? "40px" : "0" }}>
         <HeaderBar now={now} isOffline={isOffline || fromCache} lastSyncAt={lastSyncAt} />
       </div>
 
-      <div className={`flex-1 grid grid-cols-12 gap-2 ${PLAYER_LAYOUT.sidePadding} py-3`}>
+      <div className={`flex-1 grid grid-cols-12 gap-5 ${PLAYER_LAYOUT.sidePadding} py-3`}>
         <div className="col-span-3">
           <LeftPanel
             state={status.state}
@@ -487,7 +600,7 @@ export default function PlayerPage() {
           />
         </div>
 
-        <div className={publishedAnnouncements.length > 0 ? "col-span-9 flex gap-2" : "col-span-9"}>
+        <div className="col-span-6 flex flex-col">
           <div className="flex-1">
             {mode === "video" && videoCards.length > 0 ? (
               <CardCarousel
@@ -510,21 +623,54 @@ export default function PlayerPage() {
               <CardCarousel cards={textCards} index={cardIndex} />
             )}
           </div>
-          {publishedAnnouncements.length > 0 && (
-            <div className="w-72">
-              <AnnouncementSidebar
-                announcements={publishedAnnouncements}
-                selectedIndex={announcementIndex}
-                onSelect={setAnnouncementIndex}
-              />
+        </div>
+
+        {/* Sağ Panel - Ders Programı */}
+        <div className="col-span-3 rounded-2xl overflow-hidden flex flex-col" style={{ background: BRAND.colors.panel }}>
+          {/* Header */}
+          <div className="px-3 py-2 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <span className="text-base">📅</span>
+              <span className="text-white font-bold text-sm">
+                {status.state === "lesson" && statusData.currentLessonNumber
+                  ? `${statusData.currentLessonNumber}. Ders`
+                  : "Ders Programı"}
+              </span>
             </div>
-          )}
+          </div>
+
+          {/* Content - 2 sütunlu kompakt grid */}
+          <div className="flex-1 p-1.5">
+            <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
+              {currentClasses.map((entry, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-center gap-1.5 px-1.5 py-1 rounded ${entry.teacher_name ? "bg-white/10" : "bg-white/[0.03]"}`}
+                >
+                  <div className="w-10 h-5 rounded bg-emerald-500/40 text-emerald-200 flex items-center justify-center text-[11px] font-bold shrink-0">
+                    {entry.class_name}
+                  </div>
+                  <div className={`flex-1 text-[11px] font-medium truncate ${entry.teacher_name ? "text-white" : "text-white/25"}`}>
+                    {entry.teacher_name || "—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.bottomPadding}`}>
-        <TickerBar ticker={bundle?.ticker ?? []} now={now} isAlert={false} />
+        <TickerBar ticker={combinedTicker} now={now} isAlert={false} />
       </div>
-    </div>
+    </div >
+  );
+}
+
+export default function PlayerPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen w-screen flex items-center justify-center" style={{ background: "#0a0a0f" }}><div className="text-white text-xl">Yükleniyor...</div></div>}>
+      <PlayerContent />
+    </Suspense>
   );
 }

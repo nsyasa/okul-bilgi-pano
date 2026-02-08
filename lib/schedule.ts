@@ -67,3 +67,26 @@ export function formatCountdown(sec: number) {
   const s = sec % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
+
+/**
+ * Şu anki ders numarasını hesaplar (1-10).
+ * Ders dışındaysa null döner.
+ */
+export function getCurrentLessonNumber(now: Date, slots: BellSlot[]): number | null {
+  if (!slots?.length) return null;
+
+  let lessonCount = 0;
+  for (const slot of slots) {
+    if (slot.kind === "lesson") {
+      lessonCount++;
+      const s = parseHHMM(now, slot.start);
+      const e = parseHHMM(now, slot.end);
+      if (now >= s && now < e) {
+        return lessonCount;
+      }
+    }
+  }
+
+  return null;
+}
+

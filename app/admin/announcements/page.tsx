@@ -83,7 +83,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const [loading, setLoading] = useState(true);
   const [videoLoading, setVideoLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | Announcement["status"]>("all");
-  const [tab, setTab] = useState<"small" | "big" | "image" | "videos">("small");
+  const [tab, setTab] = useState<"big" | "image" | "videos">("big");
   const [activeOnly, setActiveOnly] = useState(false);
   const [editing, setEditing] = useState<FormState | null>(null);
   const [editingVideo, setEditingVideo] = useState<VideoForm | null>(null);
@@ -153,11 +153,14 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const shown = useMemo(() => {
     const now = new Date();
     const base = filter === "all" ? items : items.filter((x) => x.status === filter);
-    const byTab = tab === "small"
-      ? base.filter((x) => (x.display_mode ?? "small") === "small")
-      : tab === "big"
-        ? base.filter((x) => (x.display_mode ?? "small") === "big")
-        : base.filter((x) => (x.display_mode ?? "small") === "image");
+    // 'small' is removed from logic, defaulting to empty or specific logic if needed.
+    // tab types: "big" | "image" | "videos"
+    const byTab = tab === "big"
+      ? base.filter((x) => (x.display_mode ?? "small") === "big")
+      : tab === "image"
+        ? base.filter((x) => (x.display_mode ?? "small") === "image")
+        : []; // "videos" tab uses separate logic
+
     const list = byTab
       .slice()
       .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
@@ -374,12 +377,12 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         <div>
           <div className="text-white text-3xl font-extrabold">Ana Ekran</div>
           <div className="text-sm mt-1" style={{ color: BRAND.colors.muted }}>
-            Video, ana duyuru, duyuru ve resim slaytı içeriklerini yönetin.
+            Video, ana duyuru ve resim slaytı içeriklerini yönetin.
           </div>
         </div>
         {tab !== "videos" ? (
           <PrimaryButton type="button" onClick={startNew}>
-            {tab === "big" ? "+ Yeni Ana Duyuru" : tab === "image" ? "+ Yeni Resim Slaytı" : "+ Yeni Duyuru"}
+            {tab === "big" ? "+ Yeni Ana Duyuru" : "+ Yeni Resim Slaytı"}
           </PrimaryButton>
         ) : (
           <PrimaryButton type="button" onClick={startNewVideo}>
@@ -388,53 +391,64 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         )}
       </div>
 
-      <div className="mt-5 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-3 rounded-xl px-4 py-2" style={{ background: BRAND.colors.panel }}>
-          <div className="text-sm font-semibold" style={{ color: BRAND.colors.muted }}>Döngü</div>
-          <label className="flex items-center gap-2 text-sm" style={{ color: BRAND.colors.muted }}>
-            <input type="checkbox" checked={rotation.enabled} onChange={(e) => setRotation({ ...rotation, enabled: e.target.checked })} />
-            Açık
-          </label>
-          <div className="flex items-center gap-2 text-xs" style={{ color: BRAND.colors.muted }}>
-            Video (sn)
-            <TextInput
-              type="number"
-              value={String(rotation.videoSeconds)}
-              onChange={(e) => setRotation({ ...rotation, videoSeconds: Math.max(5, Number(e.target.value)) })}
-              style={{ width: 90 }}
-            />
+      {/* Rotation Settings - Modern Card */}
+      <div className="mt-8 mb-8 overflow-hidden rounded-2xl border border-white/5 bg-white/5 relative">
+        <div className="absolute top-0 left-0 w-1 h-full bg-brand"></div>
+        <div className="p-6 flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-4 min-w-[180px]">
+            <div className="w-12 h-12 rounded-xl bg-brand/10 flex items-center justify-center text-brand text-2xl">
+              ↺
+            </div>
+            <div>
+              <div className="text-white font-bold text-lg">Döngü Ayarları</div>
+              <label className="flex items-center gap-2 cursor-pointer mt-1 opacity-70 hover:opacity-100 transition-opacity">
+                <input type="checkbox" className="accent-brand" checked={rotation.enabled} onChange={(e) => setRotation({ ...rotation, enabled: e.target.checked })} />
+                <span className="text-xs font-mono">{rotation.enabled ? "AKTİF" : "PASIF"}</span>
+              </label>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: BRAND.colors.muted }}>
-            Resim (sn)
-            <TextInput
-              type="number"
-              value={String(rotation.imageSeconds)}
-              onChange={(e) => setRotation({ ...rotation, imageSeconds: Math.max(5, Number(e.target.value)) })}
-              style={{ width: 90 }}
-            />
+
+          <div className="h-10 w-px bg-white/10 hidden md:block"></div>
+
+          <div className="flex items-center gap-6 flex-wrap flex-1">
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-white/40">Maks. Video</span>
+              <div className="flex items-center gap-2">
+                <input type="number" className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white w-20 text-sm focus:border-brand outline-none transition-colors" value={String(rotation.videoSeconds)} onChange={(e) => setRotation({ ...rotation, videoSeconds: Math.max(5, Number(e.target.value)) })} />
+                <span className="text-xs text-white/30">sn</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-white/40">Her Resim</span>
+              <div className="flex items-center gap-2">
+                <input type="number" className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white w-20 text-sm focus:border-brand outline-none transition-colors" value={String(rotation.imageSeconds)} onChange={(e) => setRotation({ ...rotation, imageSeconds: Math.max(5, Number(e.target.value)) })} />
+                <span className="text-xs text-white/30">sn</span>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-white/40">Her Duyuru</span>
+              <div className="flex items-center gap-2">
+                <input type="number" className="bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white w-20 text-sm focus:border-brand outline-none transition-colors" value={String(rotation.textSeconds)} onChange={(e) => setRotation({ ...rotation, textSeconds: Math.max(5, Number(e.target.value)) })} />
+                <span className="text-xs text-white/30">sn</span>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs" style={{ color: BRAND.colors.muted }}>
-            Metin (sn)
-            <TextInput
-              type="number"
-              value={String(rotation.textSeconds)}
-              onChange={(e) => setRotation({ ...rotation, textSeconds: Math.max(5, Number(e.target.value)) })}
-              style={{ width: 90 }}
-            />
+
+          <div className="flex-none">
+            <PrimaryButton disabled={savingRotation} type="button" onClick={saveSettings}>
+              {savingRotation ? "Kaydediliyor..." : "Ayarları Kaydet"}
+            </PrimaryButton>
           </div>
-          <PrimaryButton type="button" disabled={savingRotation} onClick={saveSettings}>
-            {savingRotation ? "Kaydediliyor…" : "Kaydet"}
-          </PrimaryButton>
         </div>
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap mt-8">
         <div className="flex items-center gap-2">
           <SecondaryButton type="button" onClick={() => setTab("videos")}>
             Video
           </SecondaryButton>
           <SecondaryButton type="button" onClick={() => setTab("big")}>
             Ana Duyuru
-          </SecondaryButton>
-          <SecondaryButton type="button" onClick={() => setTab("small")}>
-            Duyuru
           </SecondaryButton>
           <SecondaryButton type="button" onClick={() => setTab("image")}>
             Resim Slaytı
@@ -465,215 +479,268 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         </select>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-8">
         {tab !== "videos" ? (loading ? (
-          <div className="text-white">Yükleniyor…</div>
+          <div className="p-12 text-center text-white/50 animate-pulse bg-white/5 rounded-2xl">
+            Veriler yükleniyor...
+          </div>
         ) : shown.length ? (
-          shown.map((a: any) => (
-            <div
-              key={a.id}
-              className="p-5 rounded-2xl"
-              style={{
-                background: BRAND.colors.panel,
-                border: a._activeNow ? `2px solid ${BRAND.colors.ok}` : `2px solid transparent`,
-              }}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="text-white text-xl font-extrabold truncate">
-                    {a.title}
-                    {a._activeNow ? (
-                      <span className="ml-3 text-xs px-2 py-1 rounded-full" style={{ background: BRAND.colors.bg, color: BRAND.colors.ok }}>
-                        AKTİF
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="text-sm mt-1" style={{ color: BRAND.colors.muted }}>
-                    Durum: <b>{a.status}</b> • Kategori: <b>{a.category}</b> • Öncelik: <b>{a.priority}</b>
-                  </div>
-                  <div className="text-xs mt-1" style={{ color: BRAND.colors.muted }}>
-                    {a.start_at ? `Başlangıç: ${new Date(a.start_at).toLocaleString("tr-TR")}` : "Başlangıç: —"} •{" "}
-                    {a.end_at ? `Bitiş: ${new Date(a.end_at).toLocaleString("tr-TR")}` : "Bitiş: —"}
-                  </div>
-                  <label className="mt-2 inline-flex items-center gap-2 text-xs" style={{ color: BRAND.colors.muted }}>
-                    <input type="checkbox" checked={!!a._activeNow} onChange={(e) => toggleAnnouncementActive(a, e.target.checked)} />
-                    Aktif
-                  </label>
-                </div>
+          <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/5 ring-1 ring-white/5 shadow-2xl">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-black/20">
+                <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider text-[10px] font-bold">
+                  <th className="px-5 py-4 w-16 text-center">#</th>
+                  <th className="px-5 py-4 w-1/3">Başlık & İçerik</th>
+                  <th className="px-5 py-4">Kategori / Öncelik</th>
+                  <th className="px-5 py-4">Tarih</th>
+                  <th className="px-5 py-4">Durum</th>
+                  <th className="px-5 py-4 text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {shown.map((a: any) => (
+                  <tr key={a.id} className="hover:bg-white/5 transition-all group">
+                    <td className="px-5 py-4 align-top">
+                      <div className="w-16 h-12 rounded-lg bg-black/40 overflow-hidden relative shadow-sm border border-white/10">
+                        {(a.image_url || a.image_urls?.[0]) ? (
+                          <img src={a.image_url || a.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-white/10 text-[10px]">Görsel Yok</div>
+                        )}
+                        {a.display_mode === 'image' && <div className="absolute inset-0 bg-brand/20 flex items-center justify-center"><span className="text-white text-xs drop-shadow-md">📸</span></div>}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <div className="font-bold text-white text-base leading-snug group-hover:text-brand transition-colors line-clamp-1">{a.title}</div>
+                      {a.body && <div className="text-white/50 text-xs mt-1 line-clamp-2 leading-relaxed max-w-sm">{a.body}</div>}
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <div className="flex flex-col gap-2 items-start">
+                        <div className="inline-flex items-center px-2 py-1 rounded bg-white/5 text-xs text-white/80 border border-white/5 font-medium">
+                          {a.category === 'general' ? 'Genel' : a.category === 'event' ? 'Etkinlik' : a.category === 'health' ? 'Sağlık' : a.category === 'special_day' ? 'Özel Gün' : a.category}
+                        </div>
+                        <span className="text-[10px] text-white/30 font-mono bg-black/20 px-1.5 py-0.5 rounded">Öncelik: {a.priority}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <div className="flex flex-col gap-1 text-xs text-white/60">
+                        {a.start_at ? <span className="whitespace-nowrap flex items-center gap-1">📅 {new Date(a.start_at).toLocaleDateString("tr-TR", { day: 'numeric', month: 'short' })}</span> : <span className="opacity-30">—</span>}
+                        {a.end_at ? <span className="whitespace-nowrap flex items-center gap-1 text-white/40">🏁 {new Date(a.end_at).toLocaleDateString("tr-TR", { day: 'numeric', month: 'short' })}</span> : null}
+                      </div>
+                      {a._activeNow && <div className="mt-2 text-[10px] font-bold text-green-400 flex items-center gap-1 animate-pulse">● YAYINDA</div>}
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      {a.status === 'published' ? <span className="inline-flex px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">Yayında</span> :
+                        a.status === 'approved' ? <span className="inline-flex px-2 py-1 rounded-md bg-blue-500/10 text-blue-400 text-xs font-semibold border border-blue-500/20">Onaylandı</span> :
+                          a.status === 'pending_review' ? <span className="inline-flex px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 text-xs font-semibold border border-amber-500/20">Onay Bekliyor</span> :
+                            a.status === 'rejected' ? <span className="inline-flex px-2 py-1 rounded-md bg-rose-500/10 text-rose-400 text-xs font-semibold border border-rose-500/20">Reddedildi</span> :
+                              <span className="inline-flex px-2 py-1 rounded-md bg-white/5 text-white/50 text-xs font-semibold border border-white/10">Taslak</span>}
 
-                <div className="flex items-center gap-2">
-                  {a.status === "pending_review" && canApprove(profile.role) ? (
-                    <SecondaryButton type="button" onClick={() => approveAndPublish(a)}>
-                      Onayla & Yayınla
-                    </SecondaryButton>
-                  ) : null}
-                  <SecondaryButton
-                    type="button"
-                    onClick={() => {
-                      setEditing(a);
-                    }}
-                  >
-                    Düzenle
-                  </SecondaryButton>
-                  <SecondaryButton type="button" onClick={() => del(a.id)}>
-                    Sil
-                  </SecondaryButton>
-                </div>
-              </div>
+                      {a._activeNow && <div className="mt-2 text-[10px] text-white/30 flex items-center gap-1">
+                        <input type="checkbox" className="accent-green-500" checked={true} readOnly /> Aktif
+                      </div>}
+                    </td>
+                    <td className="px-5 py-4 align-top text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                        {/* Toggle Active Button (Quick Action) */}
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5 accent-emerald-500 cursor-pointer mr-2 opacity-50 hover:opacity-100"
+                          checked={!!a._activeNow}
+                          onChange={(e) => toggleAnnouncementActive(a, e.target.checked)}
+                          title="Hızlı Yayınla/Kaldır"
+                        />
 
-              {a.body ? (
-                <div className="mt-3 text-sm text-white whitespace-pre-line">
-                  {String(a.body).slice(0, 220)}
-                  {String(a.body).length > 220 ? "…" : ""}
-                </div>
-              ) : null}
-
-              <ImagePreview imageUrl={a.image_url} imageUrls={a.image_urls} />
-            </div>
-          ))
+                        {a.status === "pending_review" && canApprove(profile.role) && (
+                          <button onClick={() => approveAndPublish(a)} className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-colors" title="Onayla">
+                            ✓
+                          </button>
+                        )}
+                        <button onClick={() => setEditing(a)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors" title="Düzenle">
+                          ✎
+                        </button>
+                        <button onClick={() => del(a.id)} className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors" title="Sil">
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="text-sm" style={{ color: BRAND.colors.muted }}>
-            Kayıt yok.
+          <div className="p-16 text-center rounded-2xl border border-white/5 bg-white/5 border-dashed flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-4xl mb-4 opacity-30">📭</div>
+            <div className="text-white font-medium text-lg">Kayıt bulunamadı</div>
+            <div className="text-white/40 text-sm mt-1 max-w-xs leading-relaxed">Yeni bir ana duyuru veya resim slaytı ekleyerek başlayabilirsiniz.</div>
+            <button onClick={startNew} className="mt-6 px-6 py-2 rounded-xl bg-brand text-white text-sm font-bold opacity-80 hover:opacity-100 transition-opacity">
+              + Yeni Ekle
+            </button>
           </div>
         )) : (videoLoading ? (
-          <div className="text-white">Yükleniyor…</div>
+          <div className="p-12 text-center text-white/50 animate-pulse bg-white/5 rounded-2xl">
+            Videolar yükleniyor...
+          </div>
         ) : shownVideos.length ? (
-          shownVideos.map((v: any) => (
-            <div
-              key={v.id}
-              className="p-5 rounded-2xl"
-              style={{
-                background: BRAND.colors.panel,
-                border: v._activeNow ? `2px solid ${BRAND.colors.ok}` : `2px solid transparent`,
-              }}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="text-white text-xl font-extrabold truncate">
-                    {v.title || "YouTube Video"}
-                    {v._activeNow ? (
-                      <span className="ml-3 text-xs px-2 py-1 rounded-full" style={{ background: BRAND.colors.bg, color: BRAND.colors.ok }}>
-                        AKTİF
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="text-sm mt-1" style={{ color: BRAND.colors.muted }}>
-                    Öncelik: <b>{v.priority}</b>
-                  </div>
-                  <div className="text-xs mt-1" style={{ color: BRAND.colors.muted }}>
-                    {v.start_at ? `Başlangıç: ${new Date(v.start_at).toLocaleString("tr-TR")}` : "Başlangıç: —"} •{" "}
-                    {v.end_at ? `Bitiş: ${new Date(v.end_at).toLocaleString("tr-TR")}` : "Bitiş: —"}
-                  </div>
-                  <div className="text-xs mt-1" style={{ color: BRAND.colors.muted }}>{v.url}</div>
-                  <label className="mt-2 inline-flex items-center gap-2 text-xs" style={{ color: BRAND.colors.muted }}>
-                    <input type="checkbox" checked={!!v._activeNow} onChange={(e) => toggleVideoActive(v, e.target.checked)} />
-                    Aktif
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <SecondaryButton
-                    type="button"
-                    onClick={() => {
-                      setEditingVideo(v);
-                    }}
-                  >
-                    Düzenle
-                  </SecondaryButton>
-                  <SecondaryButton type="button" onClick={() => delVideo(v.id)}>
-                    Sil
-                  </SecondaryButton>
-                </div>
-              </div>
-            </div>
-          ))
+          <div className="overflow-hidden rounded-2xl border border-white/5 bg-white/5 ring-1 ring-white/5 shadow-2xl">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-black/20">
+                <tr className="border-b border-white/5 text-white/40 uppercase tracking-wider text-[10px] font-bold">
+                  <th className="px-5 py-4 w-16 text-center">Tür</th>
+                  <th className="px-5 py-4 w-1/3">Video Detayı</th>
+                  <th className="px-5 py-4">Sıra / Link</th>
+                  <th className="px-5 py-4">Tarih</th>
+                  <th className="px-5 py-4">Durum</th>
+                  <th className="px-5 py-4 text-right">İşlemler</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {shownVideos.map((v: any) => (
+                  <tr key={v.id} className="hover:bg-white/5 transition-all group">
+                    <td className="px-5 py-4 align-top">
+                      <div className="w-16 h-12 rounded-lg bg-red-600/20 flex items-center justify-center text-red-500 text-2xl border border-red-500/30">
+                        ▶
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <div className="font-bold text-white text-base leading-snug group-hover:text-red-400 transition-colors line-clamp-1">{v.title || "YouTube Video"}</div>
+                      <div className="text-white/30 text-xs mt-1 truncate font-mono max-w-xs opacity-60 hover:opacity-100">{v.url}</div>
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <div className="text-[10px] text-white/30 font-mono bg-black/20 px-1.5 py-0.5 rounded inline-block">Sıra: {v.priority}</div>
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      <div className="flex flex-col gap-1 text-xs text-white/60">
+                        {v.start_at ? <span className="whitespace-nowrap flex items-center gap-1">📅 {new Date(v.start_at).toLocaleDateString("tr-TR", { day: 'numeric', month: 'short' })}</span> : <span className="opacity-30">—</span>}
+                      </div>
+                      {v._activeNow && <div className="mt-2 text-[10px] font-bold text-green-400 flex items-center gap-1 animate-pulse">● YAYINDA</div>}
+                    </td>
+                    <td className="px-5 py-4 align-top">
+                      {v._activeNow ? (
+                        <span className="inline-flex px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">Aktif</span>
+                      ) : (
+                        <span className="inline-flex px-2 py-1 rounded-md bg-white/5 text-white/50 text-xs font-semibold border border-white/10">Pasif</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 align-top text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
+                        <input
+                          type="checkbox"
+                          className="w-5 h-5 accent-emerald-500 cursor-pointer mr-2 opacity-50 hover:opacity-100"
+                          checked={!!v._activeNow}
+                          onChange={(e) => toggleVideoActive(v, e.target.checked)}
+                          title="Hızlı Yayınla/Kaldır"
+                        />
+                        <button onClick={() => setEditingVideo(v)} className="p-2 rounded-lg bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors" title="Düzenle">
+                          ✎
+                        </button>
+                        <button onClick={() => delVideo(v.id)} className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors" title="Sil">
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="text-sm" style={{ color: BRAND.colors.muted }}>
-            Kayıt yok.
+          <div className="p-16 text-center rounded-2xl border border-white/5 bg-white/5 border-dashed flex flex-col items-center justify-center">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-4xl mb-4 opacity-30">🎥</div>
+            <div className="text-white font-medium text-lg">Video bulunamadı</div>
+            <div className="text-white/40 text-sm mt-1 max-w-xs leading-relaxed">YouTube videosu ekleyerek başlayabilirsiniz.</div>
+            <button onClick={startNewVideo} className="mt-6 px-6 py-2 rounded-xl bg-red-600/80 hover:bg-red-600 text-white text-sm font-bold transition-colors">
+              + Video Ekle
+            </button>
           </div>
         ))}
       </div>
 
-      {editing ? (
-        <AnnouncementForm
-          initialState={editing}
-          onClose={() => setEditing(null)}
-          onSave={save}
-          busy={busy}
-        />
-      ) : null}
+      {
+        editing ? (
+          <AnnouncementForm
+            initialState={editing}
+            onClose={() => setEditing(null)}
+            onSave={save}
+            busy={busy}
+          />
+        ) : null
+      }
 
-      {editingVideo ? (
-        <div className="fixed inset-0 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.6)" }}>
-          <div className="w-full max-w-2xl p-6 rounded-2xl overflow-auto max-h-[90vh]" style={{ background: BRAND.colors.bg }}>
-            <div className="flex items-center justify-between">
-              <div className="text-white text-2xl font-extrabold">{editingVideo.id ? "Video Düzenle" : "Yeni Video"}</div>
-              <SecondaryButton type="button" onClick={() => setEditingVideo(null)}>
-                Kapat
-              </SecondaryButton>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <div>
-                <FieldLabel>Başlık (opsiyonel)</FieldLabel>
-                <TextInput value={editingVideo.title ?? ""} onChange={(e) => setEditingVideo({ ...editingVideo, title: e.target.value })} />
-              </div>
-
-              <div>
-                <FieldLabel>YouTube URL</FieldLabel>
-                <TextInput value={editingVideo.url ?? ""} onChange={(e) => setEditingVideo({ ...editingVideo, url: e.target.value })} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel>Öncelik (0–100)</FieldLabel>
-                  <TextInput type="number" value={String(editingVideo.priority ?? 50)} onChange={(e) => setEditingVideo({ ...editingVideo, priority: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <FieldLabel>Aktif</FieldLabel>
-                  <select
-                    className="w-full px-4 py-3 rounded-xl"
-                    style={{ background: BRAND.colors.panel, color: "white" }}
-                    value={String(!!editingVideo.is_active)}
-                    onChange={(e) => setEditingVideo({ ...editingVideo, is_active: e.target.value === "true" })}
-                  >
-                    <option value="true">Evet</option>
-                    <option value="false">Hayır</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel>Başlangıç</FieldLabel>
-                  <TextInput
-                    type="datetime-local"
-                    value={toLocalInput(editingVideo.start_at)}
-                    onChange={(e) => setEditingVideo({ ...editingVideo, start_at: e.target.value || null })}
-                  />
-                </div>
-                <div>
-                  <FieldLabel>Bitiş</FieldLabel>
-                  <TextInput
-                    type="datetime-local"
-                    value={toLocalInput(editingVideo.end_at)}
-                    onChange={(e) => setEditingVideo({ ...editingVideo, end_at: e.target.value || null })}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3">
+      {
+        editingVideo ? (
+          <div className="fixed inset-0 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.6)" }}>
+            <div className="w-full max-w-2xl p-6 rounded-2xl overflow-auto max-h-[90vh]" style={{ background: BRAND.colors.bg }}>
+              <div className="flex items-center justify-between">
+                <div className="text-white text-2xl font-extrabold">{editingVideo.id ? "Video Düzenle" : "Yeni Video"}</div>
                 <SecondaryButton type="button" onClick={() => setEditingVideo(null)}>
-                  İptal
+                  Kapat
                 </SecondaryButton>
-                <PrimaryButton disabled={videoBusy} type="button" onClick={saveVideo}>
-                  {videoBusy ? "Kaydediliyor…" : "Kaydet"}
-                </PrimaryButton>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <FieldLabel>Başlık (opsiyonel)</FieldLabel>
+                  <TextInput value={editingVideo.title ?? ""} onChange={(e) => setEditingVideo({ ...editingVideo, title: e.target.value })} />
+                </div>
+
+                <div>
+                  <FieldLabel>YouTube URL</FieldLabel>
+                  <TextInput value={editingVideo.url ?? ""} onChange={(e) => setEditingVideo({ ...editingVideo, url: e.target.value })} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>Öncelik (0–100)</FieldLabel>
+                    <TextInput type="number" value={String(editingVideo.priority ?? 50)} onChange={(e) => setEditingVideo({ ...editingVideo, priority: Number(e.target.value) })} />
+                  </div>
+                  <div>
+                    <FieldLabel>Aktif</FieldLabel>
+                    <select
+                      className="w-full px-4 py-3 rounded-xl"
+                      style={{ background: BRAND.colors.panel, color: "white" }}
+                      value={String(!!editingVideo.is_active)}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, is_active: e.target.value === "true" })}
+                    >
+                      <option value="true">Evet</option>
+                      <option value="false">Hayır</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel>Başlangıç</FieldLabel>
+                    <TextInput
+                      type="datetime-local"
+                      value={toLocalInput(editingVideo.start_at)}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, start_at: e.target.value || null })}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel>Bitiş</FieldLabel>
+                    <TextInput
+                      type="datetime-local"
+                      value={toLocalInput(editingVideo.end_at)}
+                      onChange={(e) => setEditingVideo({ ...editingVideo, end_at: e.target.value || null })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <SecondaryButton type="button" onClick={() => setEditingVideo(null)}>
+                    İptal
+                  </SecondaryButton>
+                  <PrimaryButton disabled={videoBusy} type="button" onClick={saveVideo}>
+                    {videoBusy ? "Kaydediliyor…" : "Kaydet"}
+                  </PrimaryButton>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null
+      }
       <ConfirmDialog
         open={confirmOpen}
         title={confirmData?.title || ""}
@@ -683,6 +750,6 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         onConfirm={confirmData?.action || (() => { })}
         onCancel={() => setConfirmOpen(false)}
       />
-    </AdminShell>
+    </AdminShell >
   );
 }

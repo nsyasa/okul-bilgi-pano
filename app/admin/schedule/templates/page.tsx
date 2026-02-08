@@ -15,6 +15,61 @@ export default function TemplatesPage() {
   return <AuthGate>{(profile) => <TemplatesInner profile={profile} />}</AuthGate>;
 }
 
+// Slot tablosu bileşeni
+function SlotTable({ slots, title }: { slots: BellSlot[]; title: string }) {
+  if (!slots.length) {
+    return (
+      <div className="text-white/40 text-sm py-4 text-center">
+        Program tanımlanmamış
+      </div>
+    );
+  }
+
+  const kindColors: Record<string, string> = {
+    lesson: "bg-emerald-500/20 text-emerald-300",
+    break: "bg-amber-500/20 text-amber-300",
+    lunch: "bg-rose-500/20 text-rose-300",
+  };
+
+  const kindLabels: Record<string, string> = {
+    lesson: "Ders",
+    break: "Teneffüs",
+    lunch: "Öğle",
+  };
+
+  return (
+    <div>
+      <div className="text-white font-semibold text-sm mb-2">{title}</div>
+      <div className="rounded-xl overflow-hidden border border-white/10">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-white/5 text-white/50 text-xs uppercase">
+              <th className="px-3 py-2 text-left font-medium">Saat</th>
+              <th className="px-3 py-2 text-left font-medium">Etiket</th>
+              <th className="px-3 py-2 text-left font-medium">Tür</th>
+            </tr>
+          </thead>
+          <tbody>
+            {slots.map((slot, idx) => (
+              <tr key={idx} className="border-t border-white/5 hover:bg-white/5">
+                <td className="px-3 py-2 text-white font-mono text-xs">
+                  {slot.start} - {slot.end}
+                </td>
+                <td className="px-3 py-2 text-white/80">{slot.label}</td>
+                <td className="px-3 py-2">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${kindColors[slot.kind] || "bg-white/10 text-white/50"}`}>
+                    {kindLabels[slot.kind] || slot.kind}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function TemplatesInner({ profile }: any) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [monThu, setMonThu] = useState<BellSlot[]>([]);
@@ -22,6 +77,7 @@ function TemplatesInner({ profile }: any) {
   const [rowIds, setRowIds] = useState<{ mon_thu?: string; fri?: string }>({});
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [editMode, setEditMode] = useState(false);
 
   const load = async () => {
     const { data, error } = await sb.from("schedule_templates").select("*").limit(10);
@@ -90,6 +146,7 @@ function TemplatesInner({ profile }: any) {
     setMonThu(monThuSlots);
     setFri(friSlots);
     setMsg("✅ Gerçek ders programı yüklendi. Lütfen 'Kaydet' butonuna tıklayın.");
+    setEditMode(true);
   };
 
   const save = async () => {
@@ -106,7 +163,8 @@ function TemplatesInner({ profile }: any) {
       const [r1, r2] = await Promise.all([up1, up2]);
       if (r1.error) throw r1.error;
       if (r2.error) throw r2.error;
-      setMsg("Kaydedildi.");
+      setMsg("✅ Kaydedildi.");
+      setEditMode(false);
       await load();
     } catch (e: any) {
       setMsg(e?.message ?? "Hata");
@@ -115,52 +173,157 @@ function TemplatesInner({ profile }: any) {
     }
   };
 
+  const lessonCount = (slots: BellSlot[]) => slots.filter(s => s.kind === "lesson").length;
+  const getTimeRange = (slots: BellSlot[]) => {
+    if (!slots.length) return "—";
+    return `${slots[0].start} - ${slots[slots.length - 1].end}`;
+  };
+
   return (
     <AdminShell profile={profile}>
-      <div className="text-white text-3xl font-extrabold">Zil Programı (Template)</div>
-      <div className="text-sm mt-1" style={{ color: BRAND.colors.muted }}>
-        Pazartesi–Perşembe aynı, Cuma farklı template.
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <div className="text-white text-2xl font-bold">Zil Programı</div>
+          <div className="text-sm text-white/40 mt-1">
+            Hafta içi ve Cuma için ders saatlerini yönetin
+          </div>
+        </div>
+        {!editMode && (
+          <button
+            onClick={() => setEditMode(true)}
+            className="px-4 py-2 rounded-lg font-medium text-sm bg-white/10 text-white hover:bg-white/20 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Düzenle
+          </button>
+        )}
       </div>
 
-      {/* Toplu Yükleme Butonu */}
-      <div className="mt-5 p-5 rounded-2xl" style={{ background: BRAND.colors.panel, border: `2px solid ${BRAND.colors.info}` }}>
-        <div className="text-white text-lg font-bold mb-2">⏰ Gerçek Ders Programı</div>
-        <div className="text-sm mb-3" style={{ color: BRAND.colors.muted }}>
-          Şehit Muhammed İslam Altuğ Anadolu İmam Hatip Lisesi'nin gerçek ders saatlerini tek tuşla yükleyin.
-          <br />• Pazartesi-Perşembe: 08:30-17:20 (10 ders)
-          <br />• Cuma: 08:30-17:20 (10 ders, farklı saatler)
+      {msg && (
+        <div className="mb-4 px-4 py-3 rounded-lg text-sm" style={{ background: msg.includes("✅") ? "rgba(16, 185, 129, 0.2)" : "rgba(245, 158, 11, 0.2)", color: msg.includes("✅") ? "#10b981" : "#f59e0b" }}>
+          {msg}
         </div>
-        <PrimaryButton type="button" onClick={loadDefaultSchedule}>
-          🔄 Gerçek Ders Programını Yükle
-        </PrimaryButton>
-      </div>
+      )}
 
-      {msg ? (
-        <div className="text-sm mt-3" style={{ color: BRAND.colors.warn }}>
-          • {msg}
-        </div>
-      ) : null}
+      {!editMode ? (
+        /* Görüntüleme Modu */
+        <div className="space-y-6">
+          {/* Özet Kartları */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-white/40 text-xs font-medium uppercase tracking-wide">Pazartesi - Perşembe</div>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-xs font-medium">
+                  {lessonCount(monThu)} ders
+                </span>
+              </div>
+              <div className="text-white text-lg font-mono">{getTimeRange(monThu)}</div>
+            </div>
+            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-white/40 text-xs font-medium uppercase tracking-wide">Cuma</div>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-xs font-medium">
+                  {lessonCount(fri)} ders
+                </span>
+              </div>
+              <div className="text-white text-lg font-mono">{getTimeRange(fri)}</div>
+            </div>
+          </div>
 
-      <div className="mt-5 space-y-6">
-        <div className="p-5 rounded-2xl" style={{ background: BRAND.colors.panel }}>
-          <JsonSlotsEditor
-            label="Pazartesi–Perşembe (mon_thu)"
-            value={monThu}
-            onChange={setMonThu}
-            hint="Zaman formatı HH:MM. kind: lesson | break | lunch"
-          />
-        </div>
+          {/* Program Tabloları */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl" style={{ background: BRAND.colors.panel }}>
+              <SlotTable slots={monThu} title="Pazartesi - Perşembe" />
+            </div>
+            <div className="p-4 rounded-xl" style={{ background: BRAND.colors.panel }}>
+              <SlotTable slots={fri} title="Cuma" />
+            </div>
+          </div>
 
-        <div className="p-5 rounded-2xl" style={{ background: BRAND.colors.panel }}>
-          <JsonSlotsEditor label="Cuma (fri)" value={fri} onChange={setFri} hint="Zaman formatı HH:MM. kind: lesson | break | lunch" />
+          {/* Hızlı Yükleme */}
+          <div className="p-4 rounded-xl border-2 border-dashed border-white/10 hover:border-white/20 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white font-medium text-sm">Varsayılan Programı Yükle</div>
+                <div className="text-white/40 text-xs mt-1">Okulun gerçek ders saatlerini tek tıkla yükleyin</div>
+              </div>
+              <button
+                onClick={loadDefaultSchedule}
+                className="px-4 py-2 rounded-lg font-medium text-sm bg-brand/20 text-brand hover:bg-brand/30 transition-colors"
+              >
+                Yükle
+              </button>
+            </div>
+          </div>
         </div>
+      ) : (
+        /* Düzenleme Modu */
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-center gap-2 text-amber-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span className="font-medium text-sm">Düzenleme Modu</span>
+            </div>
+            <button
+              onClick={() => { setEditMode(false); load(); }}
+              className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white/70 hover:bg-white/20 transition-colors"
+            >
+              İptal
+            </button>
+          </div>
 
-        <div className="flex justify-end">
-          <PrimaryButton disabled={busy} type="button" onClick={save}>
-            {busy ? "Kaydediliyor…" : "Kaydet"}
-          </PrimaryButton>
+          {/* Hızlı Yükleme Butonu */}
+          <div className="p-4 rounded-xl" style={{ background: BRAND.colors.panel, border: `2px solid ${BRAND.colors.info}` }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-white font-bold text-sm">⏰ Gerçek Ders Programı</div>
+                <div className="text-white/40 text-xs mt-1">Okulun gerçek saatlerini yükle (10 ders)</div>
+              </div>
+              <button onClick={loadDefaultSchedule} className="px-4 py-2 rounded-lg font-medium text-sm bg-brand text-white hover:brightness-110 transition-all">
+                Yükle
+              </button>
+            </div>
+          </div>
+
+          {/* JSON Editörler */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="p-4 rounded-xl" style={{ background: BRAND.colors.panel }}>
+              <JsonSlotsEditor
+                label="Pazartesi–Perşembe (mon_thu)"
+                value={monThu}
+                onChange={setMonThu}
+                hint="kind: lesson | break | lunch"
+              />
+            </div>
+            <div className="p-4 rounded-xl" style={{ background: BRAND.colors.panel }}>
+              <JsonSlotsEditor
+                label="Cuma (fri)"
+                value={fri}
+                onChange={setFri}
+                hint="kind: lesson | break | lunch"
+              />
+            </div>
+          </div>
+
+          {/* Kaydet Butonu */}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => { setEditMode(false); load(); }}
+              className="px-5 py-2.5 rounded-lg font-medium text-sm bg-white/10 text-white hover:bg-white/20 transition-colors"
+            >
+              İptal
+            </button>
+            <PrimaryButton disabled={busy} type="button" onClick={save}>
+              {busy ? "Kaydediliyor…" : "Kaydet"}
+            </PrimaryButton>
+          </div>
         </div>
-      </div>
+      )}
     </AdminShell>
   );
 }
