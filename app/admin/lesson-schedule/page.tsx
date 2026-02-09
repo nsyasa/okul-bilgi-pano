@@ -37,11 +37,12 @@ function LessonScheduleInner({ profile }: { profile: any }) {
 
     const load = useCallback(async () => {
         setLoading(true);
-        // Tüm kayıtları çek (sınırsız)
+        // Tüm kayıtları çek (Supabase varsayılan 1000 limitini aşmak için limit ekliyoruz)
         const { data, error } = await sb
             .from("lesson_schedule")
             .select("*")
-            .order("teacher_name", { ascending: true });
+            .order("teacher_name", { ascending: true })
+            .limit(10000); // 50 öğretmen x 50 ders = 2500 kayıt. 10000 fazlasıyla yeterli.
         if (!error) setEntries((data ?? []) as any);
         setLoading(false);
     }, [sb]);
@@ -594,10 +595,10 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                                                         <td
                                                             key={`${dayIndex}-${lessonNum}`}
                                                             className={`text-center py-1 px-0.5 ${editMode
-                                                                    ? "p-0"
-                                                                    : entry?.class_name
-                                                                        ? "text-emerald-400 font-medium"
-                                                                        : "text-white/10"
+                                                                ? "p-0"
+                                                                : entry?.class_name
+                                                                    ? "text-emerald-400 font-medium"
+                                                                    : "text-white/10"
                                                                 }`}
                                                         >
                                                             {editMode && entry ? (
