@@ -443,17 +443,10 @@ function PlayerContent() {
   }, [statusData.currentLessonNumber, nowTR, bundle?.lessonSchedule]);
 
   const combinedTicker = useMemo(() => {
-    const t = (bundle?.ticker ?? []) as TickerItem[];
-    const a = smallAnnouncements.map((x) => ({
-      id: `ann-${x.id}`,
-      text: x.title, // Sadece başlık
-      priority: x.priority ?? 50,
-      is_active: true,
-      start_at: x.start_at,
-      end_at: x.end_at,
-    })) as TickerItem[];
-    return [...t, ...a];
-  }, [bundle?.ticker, smallAnnouncements]);
+    // Kullanıcı isteği üzerine duyurular artık ticker'a dahil edilmiyor.
+    // Sadece Admin > Ticker sayfasından eklenenler görünecek.
+    return (bundle?.ticker ?? []) as TickerItem[];
+  }, [bundle?.ticker]);
 
   useEffect(() => {
     const order: Array<"video" | "image" | "text"> = ["video", "image", "text"];

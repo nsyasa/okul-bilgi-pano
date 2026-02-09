@@ -18,7 +18,9 @@ export function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: bo
     .filter((x) => isInWindow(x, props.now))
     .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
 
-  const text = items.length ? items.map((x) => x.text).join("   •   ") : "Okulumuz panosuna hoş geldiniz. İyi dersler.";
+  if (items.length === 0) return null;
+
+  const text = items.map((x) => x.text).join("   •   ");
 
   const bgColor = props.settings?.footer_bg_color || BRAND.colors.brand;
 
