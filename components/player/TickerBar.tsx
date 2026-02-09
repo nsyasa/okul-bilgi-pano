@@ -1,7 +1,7 @@
 "use client";
 
 import { BRAND } from "@/lib/branding";
-import type { TickerItem } from "@/types/player";
+import type { TickerItem, PlayerSettings } from "@/types/player";
 
 function isInWindow(item: TickerItem, now: Date) {
   const t = now.getTime();
@@ -12,7 +12,7 @@ function isInWindow(item: TickerItem, now: Date) {
   return true;
 }
 
-export function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: boolean }) {
+export function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: boolean; settings?: PlayerSettings }) {
   const items = (props.ticker ?? [])
     .filter((x) => x.is_active)
     .filter((x) => isInWindow(x, props.now))
@@ -20,8 +20,10 @@ export function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: bo
 
   const text = items.length ? items.map((x) => x.text).join("   •   ") : "Okulumuz panosuna hoş geldiniz. İyi dersler.";
 
+  const bgColor = props.settings?.footer_bg_color || BRAND.colors.brand;
+
   return (
-    <div className="w-full overflow-hidden py-6 px-6 rounded-2xl" style={{ background: props.isAlert ? BRAND.colors.danger : BRAND.colors.brand, borderTop: `2px solid ${BRAND.colors.ok}` }}>
+    <div className="w-full overflow-hidden py-6 px-6 rounded-2xl" style={{ background: props.isAlert ? BRAND.colors.danger : bgColor, borderTop: `2px solid ${BRAND.colors.ok}` }}>
       <div className="whitespace-nowrap text-white text-2xl font-bold animate-marquee">
         {text}
         <span className="mx-12">{text}</span>

@@ -117,6 +117,14 @@ export type PlayerRotationSettings = {
   textSeconds: number;
 };
 
+export type PlayerSettings = {
+  rotation?: PlayerRotationSettings;
+  school_name_line1?: string;
+  school_name_line2?: string;
+  school_logo_url?: string;
+  footer_bg_color?: string;
+};
+
 export type PlayerBundle = {
   generatedAt: number;
   announcements: Announcement[];
@@ -125,7 +133,7 @@ export type PlayerBundle = {
   dutyTemplates: DutyTemplateEntry[];
   ticker: TickerItem[];
   youtubeVideos: YouTubeVideo[];
-  settings?: { rotation?: PlayerRotationSettings };
+  settings?: PlayerSettings;
   templates: ScheduleTemplate[];
   overrides: ScheduleOverride[];
   schoolInfo: SchoolInfo[];

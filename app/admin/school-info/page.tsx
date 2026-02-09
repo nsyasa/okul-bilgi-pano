@@ -6,6 +6,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { SchoolInfo } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextArea, TextInput } from "@/components/admin/FormBits";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 
 type Form = Partial<SchoolInfo> & { id?: string };
 
@@ -18,13 +19,38 @@ function SchoolInfoInner({ profile }: any) {
   const [items, setItems] = useState<SchoolInfo[]>([]);
   const [editing, setEditing] = useState<Form | null>(null);
 
+  // Settings State
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState({
+    school_name_line1: "",
+    school_name_line2: "",
+    school_logo_url: "",
+    footer_bg_color: "", // default brand color
+  });
+
   const load = async () => {
     const { data, error } = await sb.from("school_info").select("*").order("title", { ascending: true }).limit(200);
     if (!error) setItems((data ?? []) as any);
   };
 
+  const loadSettings = async () => {
+    const { data } = await sb.from("player_settings").select("*").in("key", ["school_name_line1", "school_name_line2", "school_logo_url", "footer_bg_color"]);
+
+    if (data) {
+      const newSettings = { ...settings };
+      data.forEach((row: any) => {
+        if (row.key === "school_name_line1") newSettings.school_name_line1 = row.value;
+        if (row.key === "school_name_line2") newSettings.school_name_line2 = row.value;
+        if (row.key === "school_logo_url") newSettings.school_logo_url = row.value;
+        if (row.key === "footer_bg_color") newSettings.footer_bg_color = row.value;
+      });
+      setSettings(newSettings);
+    }
+  };
+
   useEffect(() => {
     load();
+    loadSettings();
   }, []);
 
   const startNew = () => setEditing({ title: "", body: "" });
@@ -41,6 +67,25 @@ function SchoolInfoInner({ profile }: any) {
     }
   };
 
+  const saveSettings = async () => {
+    const upsert = async (key: string, value: string) => {
+      const { error } = await sb.from("player_settings").upsert({ key, value }, { onConflict: "key" });
+      return error;
+    };
+
+    const err1 = await upsert("school_name_line1", settings.school_name_line1.trim());
+    const err2 = await upsert("school_name_line2", settings.school_name_line2.trim());
+    const err3 = await upsert("school_logo_url", settings.school_logo_url);
+    const err4 = await upsert("footer_bg_color", settings.footer_bg_color);
+
+    if (!err1 && !err2 && !err3 && !err4) {
+      alert("Ayarlar kaydedildi!");
+      setShowSettings(false);
+    } else {
+      alert("Kaydederken hata oluştu.");
+    }
+  };
+
   const del = async (id: string) => {
     if (!confirm("Silinsin mi?")) return;
     const { error } = await sb.from("school_info").delete().eq("id", id);
@@ -54,18 +99,23 @@ function SchoolInfoInner({ profile }: any) {
         <div>
           <div className="text-white text-2xl font-bold tracking-tight">Okul Bilgileri</div>
           <div className="text-sm mt-1 text-white/40">
-            Player'da sol panelde dönen bilgi kartları.
+            Player'da sol panelde dönen bilgi kartları ve genel okul ayarları.
           </div>
         </div>
-        <button
-          onClick={startNew}
-          className="px-4 py-2.5 rounded-lg font-semibold text-sm text-white bg-brand hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-brand/20 flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Yeni Kart
-        </button>
+        <div className="flex gap-3">
+          <SecondaryButton onClick={() => setShowSettings(true)}>
+            ⚙️ Okul Ayarları
+          </SecondaryButton>
+          <button
+            onClick={startNew}
+            className="px-4 py-2.5 rounded-lg font-semibold text-sm text-white bg-brand hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-brand/20 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Kart
+          </button>
+        </div>
       </div>
 
       {/* List */}
@@ -122,7 +172,7 @@ function SchoolInfoInner({ profile }: any) {
         )}
       </div>
 
-      {/* Modal */}
+      {/* Edit Modal */}
       {editing && (
         <div className="fixed inset-0 flex items-center justify-center p-6 z-50 bg-black/70 backdrop-blur-sm">
           <div className="w-full max-w-lg p-6 rounded-2xl bg-[#0a0a0f] border border-white/10 shadow-2xl">
@@ -161,6 +211,77 @@ function SchoolInfoInner({ profile }: any) {
                 </SecondaryButton>
                 <PrimaryButton type="button" onClick={save}>
                   Kaydet
+                </PrimaryButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 flex items-center justify-center p-6 z-50 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-xl p-6 rounded-2xl bg-[#0a0a0f] border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="text-white text-lg font-bold">Okul Ayarları</div>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-8 h-8 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <FieldLabel>Okul Adı (1. Satır)</FieldLabel>
+                  <TextInput
+                    value={settings.school_name_line1}
+                    onChange={(e) => setSettings({ ...settings, school_name_line1: e.target.value })}
+                    placeholder="Örn: ŞEHİT MUHAMMED İSLAM ALTUĞ"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <FieldLabel>Okul Adı (2. Satır)</FieldLabel>
+                  <TextInput
+                    value={settings.school_name_line2}
+                    onChange={(e) => setSettings({ ...settings, school_name_line2: e.target.value })}
+                    placeholder="Örn: ANADOLU İMAM HATİP LİSESİ"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>Okul Logosu</FieldLabel>
+                {/* ImageUploader'ı dynamic import veya doğrudan import edebiliriz. Dosya başında import etmeliyiz. */}
+                <div className="p-4 rounded-xl border border-white/10 bg-white/5">
+                  <ImageUploader
+                    value={settings.school_logo_url || null}
+                    onChange={(url: string | null) => setSettings({ ...settings, school_logo_url: url || "" })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <FieldLabel>Alt Bant (Footer) Rengi</FieldLabel>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={settings.footer_bg_color || "#4B3FA7"}
+                    onChange={(e) => setSettings({ ...settings, footer_bg_color: e.target.value })}
+                    className="w-16 h-10 rounded cursor-pointer bg-transparent border border-white/20"
+                  />
+                  <div className="text-xs text-white/50">Varsayılan: #4B3FA7</div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+                <SecondaryButton type="button" onClick={() => setShowSettings(false)}>
+                  İptal
+                </SecondaryButton>
+                <PrimaryButton type="button" onClick={saveSettings}>
+                  Ayarları Kaydet
                 </PrimaryButton>
               </div>
             </div>

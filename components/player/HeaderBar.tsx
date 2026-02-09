@@ -3,8 +3,9 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { BRAND } from "@/lib/branding";
+import type { PlayerSettings } from "@/types/player";
 
-export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: number | null }) {
+export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: number | null; settings?: PlayerSettings }) {
   const [mounted, setMounted] = useState(false);
   // ✅ Hydration fix: zamanı sadece client'ta üret (SSR'da null)
   const [now, setNow] = useState<Date | null>(null);
@@ -51,6 +52,10 @@ export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: nu
 
   if (!mounted) return null;
 
+  const logoSrc = props.settings?.school_logo_url || BRAND.logoSrc;
+  const line1 = props.settings?.school_name_line1 || BRAND.schoolNameLines[0];
+  const line2 = props.settings?.school_name_line2 || BRAND.schoolNameLines[1];
+
   return (
     <div
       className="w-full flex items-center justify-between px-6 py-3 rounded-2xl"
@@ -59,7 +64,7 @@ export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: nu
       <div className="flex items-center gap-6 min-w-[400px]">
         <div className="relative w-32 h-32">
           <Image
-            src={BRAND.logoSrc}
+            src={logoSrc}
             alt="Okul Logosu"
             fill
             className="object-contain"
@@ -68,9 +73,9 @@ export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: nu
           />
         </div>
         <div className="leading-tight">
-          <div className="text-4xl font-black text-white">{BRAND.schoolNameLines[0]}</div>
+          <div className="text-4xl font-black text-white">{line1}</div>
           <div className="text-3xl font-bold text-white">
-            {BRAND.schoolNameLines[1]}
+            {line2}
           </div>
         </div>
       </div>

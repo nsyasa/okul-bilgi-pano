@@ -584,7 +584,7 @@ function PlayerContent() {
         </div>
       )}
       <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.topPadding}`} style={{ marginTop: preview.isActive ? "40px" : "0" }}>
-        <HeaderBar now={now} isOffline={isOffline || fromCache} lastSyncAt={lastSyncAt} />
+        <HeaderBar now={now} isOffline={isOffline || fromCache} lastSyncAt={lastSyncAt} settings={bundle?.settings} />
       </div>
 
       <div className={`flex-1 grid grid-cols-12 gap-5 ${PLAYER_LAYOUT.sidePadding} py-3`}>
@@ -661,7 +661,7 @@ function PlayerContent() {
       </div>
 
       <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.bottomPadding}`}>
-        <TickerBar ticker={combinedTicker} now={now} isAlert={false} />
+        <TickerBar ticker={combinedTicker} now={now} isAlert={bundle?.announcements.some((a: any) => a.category === "sensitive")} settings={bundle?.settings} />
       </div>
     </div >
   );
