@@ -37,13 +37,21 @@ function LessonScheduleInner({ profile }: { profile: any }) {
 
     const load = useCallback(async () => {
         setLoading(true);
+        console.log("[load] Veriler çekiliyor...");
+
         // Tüm kayıtları çek (Supabase varsayılan 1000 limitini aşmak için limit ekliyoruz)
-        const { data, error } = await sb
+        const { data, error, count } = await sb
             .from("lesson_schedule")
-            .select("*")
+            .select("*", { count: "exact" })
             .order("teacher_name", { ascending: true })
             .limit(10000); // 50 öğretmen x 50 ders = 2500 kayıt. 10000 fazlasıyla yeterli.
-        if (!error) setEntries((data ?? []) as any);
+
+        if (error) {
+            console.error("[load] HATA:", error);
+        } else {
+            console.log(`[load] Çekilen kayıt sayısı: ${data?.length}, Toplam (count): ${count}`);
+            setEntries((data ?? []) as any);
+        }
         setLoading(false);
     }, [sb]);
 
@@ -298,27 +306,50 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                 const loadingToast = toast.loading("Yükleniyor...");
 
                 try {
+                    console.log(`[handleImport] Toplam yüklenecek kayıt: ${parsedData.length}`);
+
                     // Delete all existing
-                    const { error: delErr } = await sb
+                    const { error: delErr, count: deleteCount } = await sb
                         .from("lesson_schedule")
                         .delete()
                         .neq("id", "00000000-0000-0000-0000-000000000000");
-                    if (delErr) throw delErr;
 
-                    // Insert in batches (daha büyük batch ile hızlandır)
-                    const batchSize = 500;
+                    if (delErr) {
+                        console.error("[handleImport] Silme hatası:", delErr);
+                        throw delErr;
+                    }
+                    console.log(`[handleImport] Mevcut kayıtlar silindi`);
+
+                    // Insert in batches - daha küçük batch ile daha güvenli
+                    const batchSize = 200;
+                    let insertedTotal = 0;
+
                     for (let i = 0; i < parsedData.length; i += batchSize) {
                         const batch = parsedData.slice(i, i + batchSize);
-                        const { error } = await sb.from("lesson_schedule").insert(batch);
-                        if (error) throw error;
+                        console.log(`[handleImport] Batch ${Math.floor(i / batchSize) + 1}: ${batch.length} kayıt ekleniyor...`);
+
+                        const { error, count } = await sb.from("lesson_schedule").insert(batch);
+
+                        if (error) {
+                            console.error(`[handleImport] Batch hatası:`, error);
+                            throw error;
+                        }
+
+                        insertedTotal += batch.length;
+                        console.log(`[handleImport] Batch tamamlandı. Toplam: ${insertedTotal}/${parsedData.length}`);
                     }
 
+                    console.log(`[handleImport] TÜM KAYITLAR YÜKLENDİ: ${insertedTotal}`);
                     toast.success(`✅ ${parsedData.length} kayıt yüklendi`, { id: loadingToast });
                     setParsedData([]);
                     setFileName(null);
                     if (fileInputRef.current) fileInputRef.current.value = "";
+
+                    // Yüklemeden sonra verileri tekrar çek ve sayısını logla
                     await load();
+                    console.log(`[handleImport] Yükleme sonrası entries sayısı: ${entries.length}`);
                 } catch (err: any) {
+                    console.error("[handleImport] HATA:", err);
                     toast.error("Hata: " + err.message, { id: loadingToast });
                 } finally {
                     setImporting(false);
