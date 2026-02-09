@@ -12,7 +12,7 @@ import * as XLSX from "xlsx";
 
 const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const PAGE_SIZE = 20; // Sayfalama boyutu
+// Sayfalama kaldırıldı - tüm öğretmenler tek listede
 
 export default function LessonSchedulePage() {
     return <AuthGate>{(profile) => <LessonScheduleInner profile={profile} />}</AuthGate>;
@@ -33,7 +33,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
     // Düzenleme durumu
     const [editMode, setEditMode] = useState(false);
     const [editedEntries, setEditedEntries] = useState<Map<string, string | null>>(new Map());
-    const [currentPage, setCurrentPage] = useState(0);
+    // Sayfalama kaldırıldı
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -481,9 +481,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
         return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], "tr"));
     }, [entries]);
 
-    // Sayfalama
-    const totalPages = Math.ceil(teachers.length / PAGE_SIZE);
-    const paginatedTeachers = teachers.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+    // Sayfalama kaldırıldı - tüm öğretmenler gösteriliyor
 
     return (
         <AdminShell profile={profile}>
@@ -680,7 +678,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedTeachers.map(([name, teacherEntries]) => (
+                                    {teachers.map(([name, teacherEntries]: [string, LessonScheduleEntry[]]) => (
                                         <tr key={name} className="border-b border-white/5 hover:bg-white/[0.02]">
                                             <td className="py-2 px-3 text-white font-medium whitespace-nowrap sticky left-0 bg-[#0a0a0f] z-10">{name}</td>
                                             {DAYS.map((_, dayIndex) => (
@@ -724,47 +722,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                             </table>
                         </div>
 
-                        {/* Sayfalama */}
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-between mt-4 px-2">
-                                <div className="text-xs text-white/40">
-                                    Sayfa {currentPage + 1} / {totalPages}
-                                    <span className="ml-2">
-                                        ({currentPage * PAGE_SIZE + 1} - {Math.min((currentPage + 1) * PAGE_SIZE, teachers.length)} / {teachers.length} öğretmen)
-                                    </span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setCurrentPage(0)}
-                                        disabled={currentPage === 0}
-                                        className="px-3 py-1.5 text-xs rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        ⏮ İlk
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
-                                        disabled={currentPage === 0}
-                                        className="px-3 py-1.5 text-xs rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        ◀ Önceki
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
-                                        disabled={currentPage === totalPages - 1}
-                                        className="px-3 py-1.5 text-xs rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        Sonraki ▶
-                                    </button>
-                                    <button
-                                        onClick={() => setCurrentPage(totalPages - 1)}
-                                        disabled={currentPage === totalPages - 1}
-                                        className="px-3 py-1.5 text-xs rounded-lg bg-white/5 text-white/60 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        Son ⏭
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        {/* Sayfalama kaldırıldı - tüm öğretmenler gösteriliyor */}
                     </>
                 )}
             </div>
