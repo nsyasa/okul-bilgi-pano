@@ -71,7 +71,29 @@ export async function fetchPlayerBundle(): Promise<{
   const weekday = trNow.getDay();
 
   try {
-    const [ann, ev, tick, temp, over, info, spec, yt, settings, lessonSched, dutyTemp] = await Promise.all([
+    // Lesson schedule için pagination ile tüm kayıtları çek
+    async function fetchAllLessonSchedule() {
+      let allData: any[] = [];
+      let from = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await sb
+          .from("lesson_schedule")
+          .select("*")
+          .order("teacher_name", { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (!data || data.length < pageSize) hasMore = false;
+        allData = [...allData, ...(data || [])];
+        from += pageSize;
+      }
+      return allData;
+    }
+
+    const [ann, ev, tick, temp, over, info, spec, yt, settings, dutyTemp] = await Promise.all([
       sb
         .from("announcements")
         .select("*")
@@ -125,17 +147,15 @@ export async function fetchPlayerBundle(): Promise<{
         .select("*")
         .limit(5),
       sb
-        .from("lesson_schedule")
-        .select("*")
-        .order("teacher_name", { ascending: true })
-        .limit(1000),
-      sb
         .from("duty_templates")
         .select("*")
         .order("day_of_week", { ascending: true })
         .order("area", { ascending: true })
         .limit(100),
     ]);
+
+    // Lesson schedule'ı ayrıca pagination ile çek
+    const lessonScheduleData = await fetchAllLessonSchedule();
 
     // Nöbetçi öğretmenleri özel fonksiyonla çek
     const duties = await fetchDutyTeachers(sb, dateKey, weekday);
@@ -161,7 +181,7 @@ export async function fetchPlayerBundle(): Promise<{
       overrides: (over.data ?? []) as any,
       schoolInfo: (info.data ?? []) as any,
       specialDates: (spec.data ?? []) as any,
-      lessonSchedule: (lessonSched.data ?? []) as any,
+      lessonSchedule: lessonScheduleData as any,
     };
 
     saveCache(CACHE_KEY, bundle);
