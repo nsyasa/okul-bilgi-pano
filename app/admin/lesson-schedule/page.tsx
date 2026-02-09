@@ -37,21 +37,43 @@ function LessonScheduleInner({ profile }: { profile: any }) {
 
     const load = useCallback(async () => {
         setLoading(true);
-        console.log("[load] Veriler çekiliyor...");
+        console.log("[load] Veriler çekiliyor (pagination ile)...");
 
-        // Tüm kayıtları çek (Supabase varsayılan 1000 limitini aşmak için limit ekliyoruz)
-        const { data, error, count } = await sb
-            .from("lesson_schedule")
-            .select("*", { count: "exact" })
-            .order("teacher_name", { ascending: true })
-            .limit(10000); // 50 öğretmen x 50 ders = 2500 kayıt. 10000 fazlasıyla yeterli.
+        try {
+            // Supabase varsayılan 1000 kayıt limitini aşmak için pagination kullan
+            let allData: LessonScheduleEntry[] = [];
+            let from = 0;
+            const pageSize = 1000;
+            let hasMore = true;
 
-        if (error) {
-            console.error("[load] HATA:", error);
-        } else {
-            console.log(`[load] Çekilen kayıt sayısı: ${data?.length}, Toplam (count): ${count}`);
-            setEntries((data ?? []) as any);
+            while (hasMore) {
+                const { data, error } = await sb
+                    .from("lesson_schedule")
+                    .select("*")
+                    .order("teacher_name", { ascending: true })
+                    .range(from, from + pageSize - 1);
+
+                if (error) {
+                    console.error("[load] HATA:", error);
+                    throw error;
+                }
+
+                console.log(`[load] Sayfa ${Math.floor(from / pageSize) + 1}: ${data?.length || 0} kayıt çekildi`);
+
+                if (!data || data.length < pageSize) {
+                    hasMore = false;
+                }
+
+                allData = [...allData, ...(data || [])];
+                from += pageSize;
+            }
+
+            console.log(`[load] TOPLAM çekilen kayıt: ${allData.length}`);
+            setEntries(allData as any);
+        } catch (err) {
+            console.error("[load] Veri çekme hatası:", err);
         }
+
         setLoading(false);
     }, [sb]);
 
