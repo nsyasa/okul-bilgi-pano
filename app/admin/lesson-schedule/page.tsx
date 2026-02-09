@@ -91,29 +91,81 @@ function LessonScheduleInner({ profile }: { profile: any }) {
         reader.readAsArrayBuffer(file);
     };
 
-    // Parse Excel rows - handles the format where columns are: Teacher | Day1-Lesson1 | Day1-Lesson2 | ... | Day5-Lesson10
+    // Parse Excel rows - 2 satırlı header destekler
+    // 1. satır: Öğretmen | Pazartesi (10 sütun) | Salı (10 sütun) | ...
+    // 2. satır: Saat | 08:30-09:10 | 09:20-10:00 | ... (veya 1, 2, 3, ...)
+    // 3. satırdan itibaren: Öğretmen verileri
     const parseExcelRows = (rows: any[][]) => {
         const results: { teacher_name: string; day_of_week: number; lesson_number: number; class_name: string | null }[] = [];
 
-        const header = rows[0];
+        if (rows.length < 3) {
+            // Eğer 3 satırdan az varsa, eski mantığı dene
+            return parseExcelRowsSimple(rows);
+        }
 
-        // Determine structure: check if header has day/lesson info or just numbers
-        // Expected: First column is teacher name, next 50 columns are Day1-L1, Day1-L2, ..., Day5-L10
-        const columnMap: { col: number; day: number; lesson: number }[] = [];
+        const row0 = rows[0]; // Gün adları satırı
+        const row1 = rows[1]; // Saat satırı (opsiyonel)
 
-        for (let col = 1; col < header.length; col++) {
-            const cell = String(header[col] || "").trim();
-            const mapping = parseHeaderCell(cell, col);
-            if (mapping) {
-                columnMap.push({ col, ...mapping });
+        // Gün adlarını kontrol et
+        const dayNames = ["pazartesi", "salı", "sali", "çarşamba", "carsamba", "çarsamba", "perşembe", "persembe", "cuma"];
+        const hasMultiRowHeader = row0.some((cell: any) => {
+            const cellStr = String(cell || "").toLowerCase().trim();
+            return dayNames.some(d => cellStr.includes(d));
+        });
+
+        // Gün pozisyonlarını bul
+        const dayPositions: { day: number; startCol: number; endCol: number }[] = [];
+        if (hasMultiRowHeader) {
+            const dayMap: Record<string, number> = {
+                "pazartesi": 1, "pzt": 1,
+                "salı": 2, "sali": 2, "sal": 2,
+                "çarşamba": 3, "carsamba": 3, "çarsamba": 3, "car": 3, "çar": 3,
+                "perşembe": 4, "persembe": 4, "per": 4,
+                "cuma": 5, "cum": 5,
+            };
+
+            for (let col = 1; col < row0.length; col++) {
+                const cellStr = String(row0[col] || "").toLowerCase().trim();
+                for (const [key, dayNum] of Object.entries(dayMap)) {
+                    if (cellStr.includes(key)) {
+                        // Bu günün başlangıç sütunu
+                        const existing = dayPositions.find(d => d.day === dayNum);
+                        if (!existing) {
+                            dayPositions.push({ day: dayNum, startCol: col, endCol: col });
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // Gün aralıklarını hesapla (her gün 10 ders)
+            dayPositions.sort((a, b) => a.startCol - b.startCol);
+            for (let i = 0; i < dayPositions.length; i++) {
+                const current = dayPositions[i];
+                const next = dayPositions[i + 1];
+                if (next) {
+                    current.endCol = next.startCol - 1;
+                } else {
+                    // Son gün - kalan sütunları al
+                    current.endCol = Math.min(current.startCol + 9, row0.length - 1);
+                }
             }
         }
 
-        // If no mappings found, assume simple structure: ALL columns = 5 days x 10 lessons
-        // Her 10 sütun bir gün, toplam 50 sütun olmalı
-        if (columnMap.length === 0 && header.length > 1) {
-            const totalColumns = header.length - 1; // Öğretmen sütunu hariç
-            for (let col = 1; col <= totalColumns; col++) {
+        // Sütun haritasını oluştur
+        const columnMap: { col: number; day: number; lesson: number }[] = [];
+
+        if (dayPositions.length > 0) {
+            // 2 satırlı header var
+            for (const dp of dayPositions) {
+                for (let col = dp.startCol, lesson = 1; col <= dp.endCol && lesson <= 10; col++, lesson++) {
+                    columnMap.push({ col, day: dp.day, lesson });
+                }
+            }
+        } else {
+            // Basit yapı - her 10 sütun bir gün
+            const totalColumns = Math.max(row0.length - 1, row1.length - 1);
+            for (let col = 1; col <= totalColumns && col <= 51; col++) {
                 const dayIndex = Math.floor((col - 1) / 10);
                 const lessonNum = ((col - 1) % 10) + 1;
                 if (dayIndex < 5) {
@@ -122,21 +174,71 @@ function LessonScheduleInner({ profile }: { profile: any }) {
             }
         }
 
-        // Parse teacher rows - TÜM satırları işle
-        for (let row = 1; row < rows.length; row++) {
-            const cells = rows[row];
+        // Öğretmen satırlarını işle - 2. satırdan (index 2) başla eğer multi-row header varsa
+        const startRow = hasMultiRowHeader ? 2 : 1;
+
+        for (let rowIdx = startRow; rowIdx < rows.length; rowIdx++) {
+            const cells = rows[rowIdx];
+            if (!cells || cells.length === 0) continue;
+
+            const teacherName = String(cells[0] || "").trim();
+            // Boş satırları ve header kelimelerini atla
+            if (!teacherName || teacherName.toLowerCase() === "öğretmen" || teacherName.toLowerCase() === "saat") continue;
+
+            for (const cm of columnMap) {
+                const cellValue = cells[cm.col];
+                const className = cellValue !== undefined && cellValue !== null && cellValue !== ""
+                    ? String(cellValue).trim()
+                    : null;
+                results.push({
+                    teacher_name: teacherName,
+                    day_of_week: cm.day,
+                    lesson_number: cm.lesson,
+                    class_name: className,
+                });
+            }
+        }
+
+        console.log(`[parseExcelRows] hasMultiRowHeader: ${hasMultiRowHeader}, dayPositions:`, dayPositions);
+        console.log(`[parseExcelRows] columnMap length: ${columnMap.length}, results length: ${results.length}`);
+        console.log(`[parseExcelRows] Unique teachers: ${new Set(results.map(r => r.teacher_name)).size}`);
+
+        return results;
+    };
+
+    // Eski basit parser (fallback)
+    const parseExcelRowsSimple = (rows: any[][]) => {
+        const results: { teacher_name: string; day_of_week: number; lesson_number: number; class_name: string | null }[] = [];
+
+        const header = rows[0];
+        const totalColumns = header.length - 1;
+
+        const columnMap: { col: number; day: number; lesson: number }[] = [];
+        for (let col = 1; col <= totalColumns && col <= 51; col++) {
+            const dayIndex = Math.floor((col - 1) / 10);
+            const lessonNum = ((col - 1) % 10) + 1;
+            if (dayIndex < 5) {
+                columnMap.push({ col, day: dayIndex + 1, lesson: lessonNum });
+            }
+        }
+
+        for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
+            const cells = rows[rowIdx];
             if (!cells || cells.length === 0) continue;
 
             const teacherName = String(cells[0] || "").trim();
             if (!teacherName) continue;
 
             for (const cm of columnMap) {
-                const className = cells[cm.col] ? String(cells[cm.col]).trim() : null;
+                const cellValue = cells[cm.col];
+                const className = cellValue !== undefined && cellValue !== null && cellValue !== ""
+                    ? String(cellValue).trim()
+                    : null;
                 results.push({
                     teacher_name: teacherName,
                     day_of_week: cm.day,
                     lesson_number: cm.lesson,
-                    class_name: className || null,
+                    class_name: className,
                 });
             }
         }
@@ -144,7 +246,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
         return results;
     };
 
-    // Parse header cell to get day/lesson mapping
+    // Parse header cell to get day/lesson mapping (artık kullanılmıyor ama backward compat için tutuyoruz)
     const parseHeaderCell = (cell: string, colIndex: number): { day: number; lesson: number } | null => {
         if (!cell) return null;
 
