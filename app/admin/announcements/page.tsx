@@ -63,13 +63,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmData, setConfirmData] = useState<{ title: string; desc: string; action: () => Promise<void> } | null>(null);
 
-  const [rotation, setRotation] = useState<PlayerRotationSettings>({
-    enabled: true,
-    videoSeconds: 30,
-    imageSeconds: 10,
-    textSeconds: 10,
-  });
-  const [savingRotation, setSavingRotation] = useState(false);
+
 
   const load = async () => {
     setLoading(true);
@@ -85,25 +79,13 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     if (!error) setVideos((data ?? []) as any);
   };
 
-  const loadSettings = async () => {
-    const { data, error } = await sb.from("player_settings").select("*").eq("key", "rotation").maybeSingle();
-    if (!error && data?.value) {
-      setRotation({
-        enabled: true,
-        videoSeconds: 30,
-        imageSeconds: 10,
-        textSeconds: 10,
-        ...(data.value as any),
-      });
-    }
-  };
+
 
   const searchParams = useSearchParams();
 
   useEffect(() => {
     load();
     loadVideos();
-    loadSettings();
 
     if (searchParams.get("new") === "true") {
       startNew();
@@ -111,13 +93,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const saveSettings = async () => {
-    setSavingRotation(true);
-    const { error } = await sb.from("player_settings").upsert({ key: "rotation", value: rotation });
-    if (error) toast.error("Hata: " + error.message);
-    else toast.success("Ayarlar kaydedildi.");
-    setSavingRotation(false);
-  };
+
 
   // Aktif ve Pasif olarak grupla
   const now = useMemo(() => new Date(), [items, videos]);
@@ -513,68 +489,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       </div>
 
       {/* Döngü Ayarları - Compact */}
-      <div className="mb-6 p-4 rounded-xl bg-white/[0.03] border border-white/10">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="text-xl">↺</div>
-            <div>
-              <div className="text-white font-semibold text-sm">Döngü</div>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="accent-brand"
-                  checked={rotation.enabled}
-                  onChange={(e) => setRotation({ ...rotation, enabled: e.target.checked })}
-                />
-                <span className="text-xs text-white/50">{rotation.enabled ? "Aktif" : "Pasif"}</span>
-              </label>
-            </div>
-          </div>
 
-          <div className="h-8 w-px bg-white/10 hidden sm:block"></div>
-
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/40 uppercase">Video</span>
-              <input
-                type="number"
-                className="w-16 px-2 py-1 rounded bg-black/30 border border-white/10 text-white text-sm text-center"
-                value={rotation.videoSeconds}
-                onChange={(e) => setRotation({ ...rotation, videoSeconds: Math.max(5, Number(e.target.value)) })}
-              />
-              <span className="text-xs text-white/30">sn</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/40 uppercase">Resim</span>
-              <input
-                type="number"
-                className="w-16 px-2 py-1 rounded bg-black/30 border border-white/10 text-white text-sm text-center"
-                value={rotation.imageSeconds}
-                onChange={(e) => setRotation({ ...rotation, imageSeconds: Math.max(5, Number(e.target.value)) })}
-              />
-              <span className="text-xs text-white/30">sn</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-white/40 uppercase">Duyuru</span>
-              <input
-                type="number"
-                className="w-16 px-2 py-1 rounded bg-black/30 border border-white/10 text-white text-sm text-center"
-                value={rotation.textSeconds}
-                onChange={(e) => setRotation({ ...rotation, textSeconds: Math.max(5, Number(e.target.value)) })}
-              />
-              <span className="text-xs text-white/30">sn</span>
-            </div>
-          </div>
-
-          <button
-            onClick={saveSettings}
-            disabled={savingRotation}
-            className="px-4 py-2 rounded-lg bg-brand/80 hover:bg-brand text-white text-sm font-semibold disabled:opacity-50 transition-colors ml-auto"
-          >
-            {savingRotation ? "..." : "Kaydet"}
-          </button>
-        </div>
-      </div>
 
       {/* İçerik Alanı */}
       {tab === "videos" ? (
