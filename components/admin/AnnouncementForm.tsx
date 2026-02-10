@@ -34,6 +34,13 @@ export function AnnouncementForm({ initialState, onClose, onSave, busy, titleOve
         return isEdit ? "Duyuru Düzenle" : "Yeni Duyuru";
     };
 
+    const toLocalInput = (iso: string | null | undefined) => {
+        if (!iso) return "";
+        const d = new Date(iso);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+
     return (
         <div className="fixed inset-0 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.6)", zIndex: 50 }}>
             <div className="w-full max-w-3xl p-6 rounded-2xl overflow-auto max-h-[90vh]" style={{ background: BRAND.colors.bg }}>
@@ -137,7 +144,7 @@ export function AnnouncementForm({ initialState, onClose, onSave, busy, titleOve
                         <FieldLabel>Başlangıç Tarihi</FieldLabel>
                         <TextInput
                             type="datetime-local"
-                            value={formData.start_at ? new Date(formData.start_at).toISOString().slice(0, 16) : ""}
+                            value={toLocalInput(formData.start_at)}
                             onChange={(e) => setFormData({ ...formData, start_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
                         />
                     </div>
@@ -146,7 +153,7 @@ export function AnnouncementForm({ initialState, onClose, onSave, busy, titleOve
                         <FieldLabel>Bitiş Tarihi</FieldLabel>
                         <TextInput
                             type="datetime-local"
-                            value={formData.end_at ? new Date(formData.end_at).toISOString().slice(0, 16) : ""}
+                            value={toLocalInput(formData.end_at)}
                             onChange={(e) => setFormData({ ...formData, end_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
                         />
                     </div>

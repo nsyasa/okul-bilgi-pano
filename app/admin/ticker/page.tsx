@@ -22,6 +22,20 @@ function TickerInner({ profile }: any) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmData, setConfirmData] = useState<{ title: string; desc: string; action: () => Promise<void> } | null>(null);
 
+  const toLocalInput = (iso: string | null | undefined) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const fromLocalInput = (val: string) => {
+    if (!val) return null;
+    const d = new Date(val);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.toISOString();
+  };
+
   const load = async () => {
     const { data, error } = await sb.from("ticker_items").select("*").order("priority", { ascending: false }).limit(200);
     if (!error) setItems((data ?? []) as any);
@@ -31,7 +45,11 @@ function TickerInner({ profile }: any) {
     load();
   }, []);
 
-  const startNew = () => setEditing({ text: "", is_active: true, priority: 50, start_at: null, end_at: null });
+  const startNew = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    setEditing({ text: "", is_active: true, priority: 50, start_at: now.toISOString(), end_at: null });
+  };
 
   const save = async () => {
     if (!editing) return;
@@ -39,8 +57,8 @@ function TickerInner({ profile }: any) {
       text: (editing.text ?? "").trim(),
       is_active: !!editing.is_active,
       priority: Number(editing.priority ?? 50),
-      start_at: editing.start_at || null,
-      end_at: editing.end_at || null,
+      start_at: fromLocalInput(editing.start_at || ""),
+      end_at: fromLocalInput(editing.end_at || ""),
     };
     if (!payload.text) {
       toast.error("Metin boş olamaz.");
@@ -107,8 +125,8 @@ function TickerInner({ profile }: any) {
             <div
               key={t.id}
               className={`group p-4 rounded-xl border transition-all ${t.is_active
-                  ? "bg-white/[0.03] border-white/5 hover:border-white/15"
-                  : "bg-white/[0.01] border-white/5 opacity-50 hover:opacity-100"
+                ? "bg-white/[0.03] border-white/5 hover:border-white/15"
+                : "bg-white/[0.01] border-white/5 opacity-50 hover:opacity-100"
                 }`}
             >
               <div className="flex items-start gap-4">
@@ -116,8 +134,8 @@ function TickerInner({ profile }: any) {
                 <button
                   onClick={() => toggleActive(t)}
                   className={`mt-1 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${t.is_active
-                      ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
-                      : "bg-white/5 text-white/30 hover:bg-white/10"
+                    ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
+                    : "bg-white/5 text-white/30 hover:bg-white/10"
                     }`}
                   title={t.is_active ? "Pasif Yap" : "Aktif Yap"}
                 >
@@ -213,8 +231,8 @@ function TickerInner({ profile }: any) {
                       type="button"
                       onClick={() => setEditing({ ...editing, is_active: true })}
                       className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${editing.is_active
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                          : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20"
+                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20"
                         }`}
                     >
                       Aktif
@@ -223,8 +241,8 @@ function TickerInner({ profile }: any) {
                       type="button"
                       onClick={() => setEditing({ ...editing, is_active: false })}
                       className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${!editing.is_active
-                          ? "bg-white/10 text-white border border-white/20"
-                          : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20"
+                        ? "bg-white/10 text-white border border-white/20"
+                        : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20"
                         }`}
                     >
                       Pasif
@@ -239,8 +257,8 @@ function TickerInner({ profile }: any) {
                   <input
                     type="datetime-local"
                     className="w-full px-4 py-3 rounded-xl outline-none bg-black/30 text-white border border-white/10 focus:border-brand focus:ring-1 focus:ring-brand/30 transition-all text-sm"
-                    value={editing.start_at ? editing.start_at.slice(0, 16) : ""}
-                    onChange={(e) => setEditing({ ...editing, start_at: e.target.value || null })}
+                    value={toLocalInput(editing.start_at)}
+                    onChange={(e) => setEditing({ ...editing, start_at: e.target.value })}
                   />
                 </div>
                 <div>
@@ -248,8 +266,8 @@ function TickerInner({ profile }: any) {
                   <input
                     type="datetime-local"
                     className="w-full px-4 py-3 rounded-xl outline-none bg-black/30 text-white border border-white/10 focus:border-brand focus:ring-1 focus:ring-brand/30 transition-all text-sm"
-                    value={editing.end_at ? editing.end_at.slice(0, 16) : ""}
-                    onChange={(e) => setEditing({ ...editing, end_at: e.target.value || null })}
+                    value={toLocalInput(editing.end_at)}
+                    onChange={(e) => setEditing({ ...editing, end_at: e.target.value })}
                   />
                 </div>
               </div>

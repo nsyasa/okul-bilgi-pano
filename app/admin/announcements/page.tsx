@@ -153,6 +153,9 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   }, [videos, now]);
 
   const startNew = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
     setEditing({
       title: "",
       body: "",
@@ -162,19 +165,22 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       status: "published",
       category: "general",
       display_mode: tab === "big" ? "big" : tab === "image" ? "image" : "small",
-      start_at: null,
+      start_at: now.toISOString(),
       end_at: null,
       approved_label: false,
     });
   };
 
   const startNewVideo = () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
     setEditingVideo({
       title: "",
       url: "",
       is_active: true,
       priority: 50,
-      start_at: null,
+      start_at: now.toISOString(),
       end_at: null,
     });
   };
@@ -346,8 +352,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
     return (
       <div className={`group relative rounded-xl overflow-hidden transition-all duration-200 ${isActive
-          ? "bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/30 shadow-lg shadow-emerald-500/10"
-          : "bg-white/[0.03] border border-white/10 hover:border-white/20"
+        ? "bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-2 border-emerald-500/30 shadow-lg shadow-emerald-500/10"
+        : "bg-white/[0.03] border border-white/10 hover:border-white/20"
         }`}>
         {/* Görsel veya Video İkonu */}
         <div className="relative h-28 bg-black/20 overflow-hidden">
@@ -367,8 +373,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
           {/* Yayın Durumu Badge */}
           <div className={`absolute top-2 left-2 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${isActive
-              ? "bg-emerald-500 text-white shadow-lg"
-              : "bg-black/60 text-white/60"
+            ? "bg-emerald-500 text-white shadow-lg"
+            : "bg-black/60 text-white/60"
             }`}>
             {isActive ? "● Yayında" : "Pasif"}
           </div>
@@ -412,8 +418,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
               <button
                 onClick={() => isAnnouncement ? toggleAnnouncementActive(item, !isActive) : toggleVideoActive(item, !isActive)}
                 className={`p-1.5 rounded-lg transition-colors ${isActive
-                    ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/40"
-                    : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40"
+                  ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/40"
+                  : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40"
                   }`}
                 title={isActive ? "Yayından Kaldır" : "Yayına Al"}
               >
@@ -486,8 +492,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
             key={t.key}
             onClick={() => setTab(t.key as any)}
             className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${tab === t.key
-                ? "bg-brand text-white shadow-lg shadow-brand/30"
-                : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
+              ? "bg-brand text-white shadow-lg shadow-brand/30"
+              : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
               }`}
           >
             {t.label}
