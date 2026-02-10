@@ -59,6 +59,8 @@ export type YouTubeVideo = {
   start_at: string | null;
   end_at: string | null;
   priority: number;
+  flow_order?: number | null;
+  created_at?: string; // Optional because API might not return it in all cases? No, let's make it mandatory if DB has it
 };
 
 export type BellSlot = {
