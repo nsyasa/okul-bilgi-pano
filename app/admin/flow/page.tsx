@@ -20,10 +20,39 @@ type FlowItem = {
     created_at: string;
     is_active: boolean; // Normalized: announcement.status === 'published', video.is_active === true
     image?: string;
-    type_label: "Video" | "Resim" | "Duyuru";
+    type_label: "Video" | "Resim" | "Duyuru" | "Metin";
     duration_source: "videoSeconds" | "imageSeconds" | "textSeconds";
     original: Announcement | YouTubeVideo;
 };
+
+
+function extractYouTubeId(input: string | null | undefined) {
+    if (!input) return null;
+    // If it's just an ID (11 chars), return it.
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+
+    try {
+        // If it's a URL
+        if (input.includes("youtube.com") || input.includes("youtu.be")) {
+            const url = new URL(input.startsWith("http") ? input : `https://${input}`);
+            if (url.hostname.includes("youtu.be")) return url.pathname.replace("/", "");
+            if (url.pathname.startsWith("/shorts/")) return url.pathname.split("/shorts/")[1]?.split("/")[0] ?? null;
+            if (url.pathname.startsWith("/embed/")) return url.pathname.split("/embed/")[1]?.split("/")[0] ?? null;
+            if (url.searchParams.has("v")) return url.searchParams.get("v");
+        }
+    } catch { }
+
+    // Fallback regex
+    const match = input.match(/(?:v=|youtu\.be\/|embed\/|shorts\/|\/)([a-zA-Z0-9_-]{11})/);
+    if (match) return match[1];
+
+    // Clean up if it looks like an ID with params
+    if (input.length > 11 && !input.includes("/")) {
+        return input.split("?")[0].split("&")[0];
+    }
+
+    return input;
+}
 
 function FlowInner({ profile }: { profile: any }) {
     const sb = useMemo(() => supabaseBrowser(), []);
@@ -48,12 +77,7 @@ function FlowInner({ profile }: { profile: any }) {
         const { data: announcements, error: annError } = await sb
             .from("announcements")
             .select("*")
-            .neq("status", "draft") // Draft = tamamen gizli, ama Passive = rejected/pending? 
-            // User asked for "Passive" list. Maybe we should fetch draft too?
-            // Let's fetch everything except deleted (if implement soft delete).
-            // Actually, user wants "Active" vs "Passive". 
-            // "Active" = published. "Passive" = anything else visible in admin?
-            // Let's fetch ALL for now and let UI filter.
+            .neq("status", "draft")
             .order("created_at", { ascending: false });
 
         // 2. Fetch Videos (ALL)
@@ -72,7 +96,6 @@ function FlowInner({ profile }: { profile: any }) {
         const merged: FlowItem[] = [];
 
         (announcements as Announcement[] || []).forEach(a => {
-            // "Matematik Duyurusu" cleanup logic could be here, but let's do sort first.
             const isImage = a.display_mode === 'image';
             merged.push({
                 id: a.id,
@@ -89,14 +112,15 @@ function FlowInner({ profile }: { profile: any }) {
         });
 
         (videos as YouTubeVideo[] || []).forEach(v => {
+            const vidId = extractYouTubeId(v.url) || v.id;
             merged.push({
                 id: v.id,
                 kind: "video",
                 title: v.title || "İsimsiz Video",
-                flow_order: (v as any).flow_order ?? 0, // Cast because API might not see flow_order yet
-                created_at: (v as any).created_at, // created_at exists on video
+                flow_order: (v as any).flow_order ?? 0,
+                created_at: (v as any).created_at,
                 is_active: v.is_active,
-                image: `https://img.youtube.com/vi/${v.url}/mqdefault.jpg`, // Simple thumbnail
+                image: `https://img.youtube.com/vi/${vidId}/mqdefault.jpg`,
                 type_label: "Video",
                 duration_source: "videoSeconds",
                 original: v
