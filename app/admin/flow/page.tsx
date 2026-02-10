@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+// Last Sync: 2026-02-10 20:25 (Unified Flow Update)
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
@@ -441,8 +442,8 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                 <button
                     onClick={onToggle}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${item.is_active
-                            ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
-                            : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                        ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20'
+                        : 'bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                         }`}
                 >
                     {item.is_active ? "Pasife Al" : "Yayına Al"}
