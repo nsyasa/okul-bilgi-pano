@@ -156,6 +156,9 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
+    const end = new Date(now);
+    end.setDate(end.getDate() + 7);
+
     setEditing({
       title: "",
       body: "",
@@ -166,7 +169,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       category: "general",
       display_mode: tab === "big" ? "big" : tab === "image" ? "image" : "small",
       start_at: now.toISOString(),
-      end_at: null,
+      end_at: end.toISOString(),
       approved_label: false,
     });
   };
@@ -175,13 +178,16 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
+    const end = new Date(now);
+    end.setDate(end.getDate() + 7);
+
     setEditingVideo({
       title: "",
       url: "",
       is_active: true,
       priority: 50,
       start_at: now.toISOString(),
-      end_at: null,
+      end_at: end.toISOString(),
     });
   };
 
@@ -477,7 +483,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
         {/* Yeni Ekle Butonu */}
         <PrimaryButton type="button" onClick={tab === "videos" ? startNewVideo : startNew}>
-          {tab === "videos" ? "+ Yeni Video" : tab === "big" ? "+ Yeni Ana Duyuru" : "+ Yeni Resim Slaytı"}
+          {tab === "videos" ? "+ Yeni Video" : tab === "big" ? "+ Yeni Duyuru" : "+ Yeni Resim Slaytı"}
         </PrimaryButton>
       </div>
 
@@ -485,7 +491,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       <div className="flex flex-wrap items-center gap-2 mb-6">
         {[
           { key: "videos", label: "🎥 Video", count: activeVideos.length },
-          { key: "big", label: "📢 Ana Duyuru", count: activeAnnouncements.length },
+          { key: "big", label: "📢 Duyuru", count: activeAnnouncements.length },
           { key: "image", label: "🖼️ Resim Slaytı", count: activeAnnouncements.length },
         ].map((t) => (
           <button

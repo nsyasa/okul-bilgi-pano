@@ -48,7 +48,9 @@ function TickerInner({ profile }: any) {
   const startNew = () => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
-    setEditing({ text: "", is_active: true, priority: 50, start_at: now.toISOString(), end_at: null });
+    const end = new Date(now);
+    end.setDate(end.getDate() + 7);
+    setEditing({ text: "", is_active: true, priority: 50, start_at: now.toISOString(), end_at: end.toISOString() });
   };
 
   const save = async () => {

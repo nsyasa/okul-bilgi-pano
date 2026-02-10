@@ -215,17 +215,17 @@ export function CardCarousel(props: {
     <div className="h-full rounded-2xl overflow-hidden relative flex flex-col" style={{ background: BRAND.colors.panel }}>
       {card.kind !== "video" ? (
         <>
-          {/* Başlık */}
-          <div className="px-10 py-8" style={{ borderBottom: `3px solid ${BRAND.colors.brand}` }}>
-            <div className="text-2xl tracking-widest font-bold" style={{ color: BRAND.colors.brand }}>
+          {/* Başlık - Daha Minimal */}
+          <div className="px-8 py-4" style={{ borderBottom: `2px solid ${BRAND.colors.brand}` }}>
+            <div className="text-sm tracking-widest font-bold opacity-60" style={{ color: BRAND.colors.brand }}>
               {card.kind === "announcement" ? "DUYURU" : card.kind === "event" ? "ETKİNLİK" : "OKUL"}
             </div>
-            <div className="text-5xl font-black mt-3 text-white leading-tight">
+            <div className="text-3xl font-black mt-1 text-white leading-tight">
               {card.kind === "announcement" ? card.data.title : card.kind === "event" ? card.data.title : card.data.title}
             </div>
             {card.kind === "announcement" && card.data.approved_label ? (
               <div
-                className="mt-3 text-lg inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold"
+                className="mt-2 text-xs inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold"
                 style={{ background: BRAND.colors.bg, color: BRAND.colors.brand }}
               >
                 ✓ Editör Onaylı
@@ -234,23 +234,23 @@ export function CardCarousel(props: {
           </div>
 
           {/* İçerik */}
-          <div className="flex-1 flex flex-col p-8 gap-4">
+          <div className="flex-1 flex flex-col p-6 gap-3">
             {card.kind === "announcement" ? (
               <>
-                {/* Metin Kutusu - Üstte Küçük */}
+                {/* Metin Kutusu - Daha Minimal */}
                 {card.data.body && (
-                  <div className="p-6 rounded-xl" style={{ background: BRAND.colors.bg }}>
-                    <div className="text-2xl leading-relaxed text-white whitespace-pre-line line-clamp-4">{card.data.body}</div>
+                  <div className="p-4 rounded-xl" style={{ background: BRAND.colors.bg }}>
+                    <div className="text-lg leading-relaxed text-white/90 whitespace-pre-line line-clamp-3">{card.data.body}</div>
                   </div>
                 )}
 
-                {/* Resim Galerisi - Büyük */}
+                {/* Resim Galerisi - Daha Fazla Alan */}
                 {card.data.image_urls && card.data.image_urls.length > 0 ? (
                   <div className="flex-1">
                     <div className="relative w-full h-full rounded-2xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-                      <Image src={card.data.image_urls[imageIndex]} alt="Duyuru görseli" fill className="object-cover" />
+                      <Image src={card.data.image_urls[imageIndex]} alt="Duyuru görseli" fill className="object-contain" />
                       {card.data.image_urls.length > 1 && (
-                        <div className="absolute bottom-6 right-6 px-6 py-3 rounded-full text-2xl font-bold" style={{ background: "rgba(0,0,0,0.8)", color: "white" }}>
+                        <div className="absolute bottom-4 right-4 px-4 py-2 rounded-xl text-lg font-bold" style={{ background: "rgba(0,0,0,0.6)", color: "white", backdropFilter: "blur(4px)" }}>
                           {imageIndex + 1} / {card.data.image_urls.length}
                         </div>
                       )}
@@ -259,24 +259,24 @@ export function CardCarousel(props: {
                 ) : card.data.image_url ? (
                   <div className="flex-1">
                     <div className="relative w-full h-full rounded-2xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-                      <Image src={card.data.image_url} alt="Duyuru görseli" fill className="object-cover" />
+                      <Image src={card.data.image_url} alt="Duyuru görseli" fill className="object-contain" />
                     </div>
                   </div>
                 ) : null}
               </>
             ) : card.kind === "event" ? (
               <div className="h-full flex flex-col justify-between">
-                <div className="text-3xl text-white leading-relaxed whitespace-pre-line">{card.data.description ?? ""}</div>
-                <div className="mt-8 p-6 rounded-2xl" style={{ background: BRAND.colors.bg }}>
-                  <div className="text-2xl font-bold text-white">{formatEventDate(card.data.starts_at)}</div>
-                  <div className="text-xl mt-2" style={{ color: BRAND.colors.brand }}>
+                <div className="text-2xl text-white leading-relaxed whitespace-pre-line">{card.data.description ?? ""}</div>
+                <div className="mt-4 p-4 rounded-xl" style={{ background: BRAND.colors.bg }}>
+                  <div className="text-xl font-bold text-white">{formatEventDate(card.data.starts_at)}</div>
+                  <div className="text-lg mt-1" style={{ color: BRAND.colors.brand }}>
                     📍 {card.data.location ?? ""}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="h-full flex items-center">
-                <div className="text-3xl text-white leading-relaxed whitespace-pre-line">{card.data.body}</div>
+                <div className="text-2xl text-white leading-relaxed whitespace-pre-line">{card.data.body}</div>
               </div>
             )}
           </div>

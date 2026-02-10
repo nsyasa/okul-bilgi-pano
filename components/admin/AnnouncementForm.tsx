@@ -127,7 +127,7 @@ export function AnnouncementForm({ initialState, onClose, onSave, busy, titleOve
                     <div>
                         <FieldLabel>Gösterim Tipi</FieldLabel>
                         <div className="px-4 py-3 rounded-xl text-sm" style={{ background: BRAND.colors.panel, color: "white" }}>
-                            {formData.display_mode === "big" ? "Ana Duyuru" : formData.display_mode === "image" ? "Resim Slaytı" : "Duyuru"}
+                            {formData.display_mode === "big" ? "Duyuru" : formData.display_mode === "image" ? "Resim Slaytı" : "Duyuru"}
                         </div>
                     </div>
 
