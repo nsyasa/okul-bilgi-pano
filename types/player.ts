@@ -13,6 +13,8 @@ export type Announcement = {
   category: "general" | "event" | "special_day" | "sensitive" | "health" | "info";
   approved_label?: boolean | null;
   display_mode?: "small" | "big" | "image" | null;
+  flow_order?: number | null;
+  created_at: string;
 };
 
 export type EventItem = {

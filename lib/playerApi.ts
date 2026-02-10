@@ -98,7 +98,8 @@ export async function fetchPlayerBundle(): Promise<{
         .from("announcements")
         .select("*")
         .eq("status", "published")
-        .order("priority", { ascending: false })
+        .order("flow_order", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(50),
       sb
         .from("events")
