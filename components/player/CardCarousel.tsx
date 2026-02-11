@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+// Image import removed to use standard img tag
 import { BRAND } from "@/lib/branding";
 import { loadYouTubeIframeApi, type YTPlayer } from "@/lib/youtubeIframeApi";
 import type { Announcement, EventItem, SchoolInfo, YouTubeVideo } from "@/types/player";
@@ -96,9 +96,6 @@ function YouTubeEmbed({
       if (watchdogTimer) clearTimeout(watchdogTimer);
       if (player) {
         try {
-          // IMPORTANT: Destroying the player removes the iframe from DOM.
-          // We must be careful not to let React try to remove it afterwards if it confuses the tree.
-          // Usually, React removes the container div, so destroying player is fine.
           player.destroy();
         } catch { }
       }
@@ -110,13 +107,10 @@ function YouTubeEmbed({
         await loadYouTubeIframeApi(10000);
         if (isCancelled) return;
 
-        // Create a dedicated child div for the player to replace
-        // This prevents React from losing track of the main containerRef
         const childId = `yt-player-${videoId}-${Date.now()}`;
         const childDiv = document.createElement("div");
         childDiv.id = childId;
 
-        // Clear container and append new child
         if (containerRef.current) {
           containerRef.current.innerHTML = "";
           containerRef.current.appendChild(childDiv);
@@ -133,7 +127,7 @@ function YouTubeEmbed({
             playsinline: 1,
             disablekb: 1,
             fs: 0,
-            origin: window.location.origin, // Fix origin error
+            origin: window.location.origin,
           },
           events: {
             onReady: (e) => {
@@ -165,7 +159,6 @@ function YouTubeEmbed({
 
     init();
 
-    // Watchdog
     watchdogTimer = setTimeout(() => {
       if (!isCancelled && !hasEndedRef.current) {
         onEnded();
@@ -175,8 +168,6 @@ function YouTubeEmbed({
     return cleanup;
   }, [videoId, maxSeconds, onEnded, onError]);
 
-  // Using a stable container ref that React controls.
-  // We manually manage the children of this div in useEffect.
   return <div ref={containerRef} className="absolute inset-0 w-full h-full bg-black" />;
 }
 
@@ -191,10 +182,8 @@ export function CardCarousel(props: {
   const [imageIndex, setImageIndex] = useState(0);
   const videoId = card?.kind === "video" ? extractYouTubeId(card.data.url) : null;
 
-  // Unique key to force remount when video changes
   const videoKey = videoId ? `${videoId}-${props.index}` : null;
 
-  // Auto-rotate images
   useEffect(() => {
     if (card?.kind !== "announcement") return;
     const images = card.data.image_urls ?? [];
@@ -205,7 +194,6 @@ export function CardCarousel(props: {
 
   useEffect(() => setImageIndex(0), [props.index]);
 
-  // Determine Content Type
   const isVideo = card?.kind === "video" && !!videoId;
 
   if (!card) return null;
@@ -214,18 +202,16 @@ export function CardCarousel(props: {
     <div className="h-full rounded-2xl overflow-hidden relative flex flex-col" style={{ background: BRAND.colors.panel }}>
 
       {isVideo ? (
-        // Video Render
         <div className="flex-1 relative bg-black">
           <YouTubeEmbed
-            key={videoKey} // Critical: Forces fresh component for each video
+            key={videoKey}
             videoId={videoId!}
             onEnded={() => props.onVideoEnded?.()}
-            onError={() => props.onVideoEnded?.()} // Skip on error
+            onError={() => props.onVideoEnded?.()}
             maxSeconds={props.videoMaxSeconds ?? 300}
           />
         </div>
       ) : (
-        // Standard Content Render
         <>
           {/* Header */}
           <div className="px-6 py-2 pb-3 shrink-0" style={{ borderBottom: `2px solid ${BRAND.colors.brand}` }}>
@@ -262,13 +248,10 @@ export function CardCarousel(props: {
                 {/* Images (Fills remaining space) */}
                 {(card.data.image_urls?.length ?? 0) > 0 ? (
                   <div className="flex-1 min-h-0 relative rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-                    <Image
+                    <img
                       src={card.data.image_urls![imageIndex]}
                       alt="Görsel"
-                      fill
-                      className="object-contain"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      priority
+                      className="w-full h-full object-contain"
                     />
                     {card.data.image_urls!.length > 1 && (
                       <div className="absolute bottom-2 right-2 px-3 py-1 rounded-lg text-sm font-bold bg-black/60 text-white backdrop-blur-sm">
@@ -278,12 +261,10 @@ export function CardCarousel(props: {
                   </div>
                 ) : card.data.image_url ? (
                   <div className="flex-1 min-h-0 relative rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-                    <Image
+                    <img
                       src={card.data.image_url}
                       alt="Görsel"
-                      fill
-                      className="object-contain"
-                      priority
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 ) : null}
