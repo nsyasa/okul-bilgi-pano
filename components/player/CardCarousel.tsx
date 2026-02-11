@@ -279,11 +279,11 @@ export function CardCarousel(props: {
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : card.kind === "info" ? (
               <div className="h-full flex items-center">
                 <div className="text-2xl text-white leading-relaxed whitespace-pre-line">{card.data.body}</div>
               </div>
-            )}
+            ) : null}
           </div>
         </>
       )}
