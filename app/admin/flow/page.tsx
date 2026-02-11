@@ -430,8 +430,11 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
 
     return (
         <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${isPassive ? 'bg-black/20 border-white/5' : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'}`}>
-            <div className="flex items-center gap-4 overflow-hidden">
-                {!isPassive && <div className="text-white/20 font-mono text-sm w-6 text-center">{index + 1}</div>}
+            <div className="flex items-center gap-4 overflow-hidden flex-1">
+                {/* Active/Passive Dot */}
+                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.is_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500/30'}`} title={item.is_active ? "Yayında" : "Pasif"}></div>
+
+                {!isPassive && <div className="text-white/20 font-mono text-sm w-6 text-center shrink-0">{index + 1}</div>}
 
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-white/5 text-xl shrink-0">
                     {icon}
@@ -451,8 +454,10 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                     </div>
                 )}
 
-                <div className="min-w-0">
-                    <div className={`font-medium truncate ${isPassive ? 'text-white/50' : 'text-white'}`}>{item.title}</div>
+                <div className="min-w-0 flex-1 pr-4">
+                    <div className={`font-medium truncate ${isPassive ? 'text-white/50' : 'text-white'}`} title={item.title}>
+                        {item.title}
+                    </div>
                     <div className="text-xs text-white/40 flex items-center gap-3">
                         <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{item.type_label}</span>
                         <span className="flex items-center gap-1">⏱️ {duration}sn</span>
@@ -461,7 +466,7 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 pl-4">
+            <div className="flex items-center gap-2 pl-2 shrink-0">
                 {/* Active/Passive Toggle */}
                 <button
                     onClick={onToggle}

@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { BRAND } from "@/lib/branding";
 import { PLAYER_LAYOUT } from "@/lib/layoutConfig";
 import { fetchWeatherNow } from "@/lib/weather";
-import { computeNowStatus, pickSlotsForToday, getCurrentLessonNumber } from "@/lib/schedule";
+import { computeNowStatus, pickSlotsForToday, getCurrentLessonNumber, formatCountdown } from "@/lib/schedule";
 import { HeaderBar } from "@/components/player/HeaderBar";
 import { usePlayerBundle } from "@/hooks/usePlayerBundle";
 import { usePlayerWatchdog } from "@/hooks/usePlayerWatchdog";
@@ -83,6 +83,9 @@ function PlayerContent() {
   const now = preview.isActive ? preview.effectiveNow : realNow;
   const nowTR = useMemo(() => new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" })), [now]);
 
+  // Derived minute tick for playlist updates (avoids second-by-second regeneration)
+  const minuteTick = useMemo(() => Math.floor(nowTR.getTime() / 60000), [nowTR]);
+
   const [weather, setWeather] = useState<WeatherNow | null>(null);
 
   // Playlist State
@@ -102,16 +105,17 @@ function PlayerContent() {
     return (bundle?.settings?.rotation as PlayerRotationSettings) ?? { enabled: true, videoSeconds: 30, imageSeconds: 10, textSeconds: 10 };
   }, [bundle?.settings]);
 
-  // Build Playlist
+  // Build Playlist - Now depends on minuteTick instead of nowTR to prevent rapid regeneration
   const playlist = useMemo<PlaylistItem[]>(() => {
     if (!bundle) return [];
 
     const list: PlaylistItem[] = [];
+    const _nowForFilter = new Date(minuteTick * 60000); // Approximate time for filtering
 
     // 1. Announcements
     (bundle.announcements || []).forEach(a => {
       if (a.status !== 'published') return;
-      if (!inWindow(a, nowTR)) return;
+      if (!inWindow(a, _nowForFilter)) return;
 
       // Determine type/duration
       const isImage = a.display_mode === 'image';
@@ -131,7 +135,7 @@ function PlayerContent() {
     // 2. Videos
     (bundle.youtubeVideos || []).forEach(v => {
       if (!v.is_active) return;
-      if (!inWindow(v, nowTR)) return;
+      if (!inWindow(v, _nowForFilter)) return;
 
       list.push({
         id: v.id,
@@ -148,14 +152,12 @@ function PlayerContent() {
     return list.sort((a, b) => {
       if (a.flow_order !== b.flow_order) return a.flow_order - b.flow_order;
       // Secondary: created_at desc (newer first if same order)
-      // Note: created_at might be missing on legacy types if strictly typed, but Migration added it.
-      // Safety check just in case types drift
       const tA = new Date(a.created_at || 0).getTime();
       const tB = new Date(b.created_at || 0).getTime();
       return tB - tA;
     });
 
-  }, [bundle, nowTR, rotation]);
+  }, [bundle, minuteTick, rotation]);
 
   // Current Item
   const currentItem = useMemo(() => {
@@ -205,7 +207,7 @@ function PlayerContent() {
     return { state: st.state, nextInSec: st.nextInSec ?? null, nextLabel: st.nextLabel ?? null, slots: picked.slots, currentLessonNumber: lessonNum };
   }, [bundle, nowTR]);
 
-  // Class list logic (copy-pasted from original for stability)
+  // Class list logic
   const ALL_CLASSES = ["5-A", "5-B", "6-A", "6-B", "7-A", "7-B", "8-A", "8-B", "9-A", "9-B", "9-C", "9-D", "10-A", "10-B", "10-C", "10-D", "11-A", "11-B", "11-C", "11-D", "12-A", "12-B", "12-C", "12-D", "12-E"];
   const currentClasses = useMemo(() => {
     const lessonNum = statusData.currentLessonNumber;
@@ -224,7 +226,6 @@ function PlayerContent() {
   }, [statusData.currentLessonNumber, nowTR, bundle?.lessonSchedule]);
 
   // Derived Cards for CardCarousel
-  // We reconstruct "cards" array of length 1 for the current item
   const currentCardList = useMemo(() => {
     if (!currentItem) return [];
 
@@ -237,10 +238,11 @@ function PlayerContent() {
     return [];
   }, [currentItem]);
 
-  // Combined Ticker (Announcements are NO LONGER in ticker as per previous request? Or maybe they are?)
-  // Previous code: `// Kullanıcı isteği üzerine duyurular artık ticker'a dahil edilmiyor.`
-  // So kept as is.
   const combinedTicker = useMemo(() => (bundle?.ticker ?? []) as TickerItem[], [bundle?.ticker]);
+
+  // Determine State Labels/Colors
+  const statusLabel = statusData.state === "lesson" ? "DERS" : statusData.state === "break" ? "TENEFÜS" : statusData.state === "lunch" ? "ÖĞLE ARASI" : "OKUL DIŞI";
+  const statusColor = statusData.state === "lesson" ? "#ef4444" : statusData.state === "break" ? "#22c55e" : statusData.state === "lunch" ? BRAND.colors.info : BRAND.colors.muted;
 
   if (!mounted) return null;
 
@@ -248,7 +250,7 @@ function PlayerContent() {
     <div className="min-h-screen w-screen flex flex-col overflow-hidden" style={{ background: BRAND.colors.bg }}>
       {preview.isActive && <PreviewBanner previewTimeStr={preview.previewTimeStr} remainingTtl={preview.remainingTtl} onExit={preview.exitPreview} />}
 
-      {/* Overlays (Connection, Daily Refresh, Offline) - Keeping existing logic but simplified markup for brevity here */}
+      {/* Overlays */}
       {showConnectionOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }}>
           <div className="text-center text-white p-8 rounded-2xl max-w-lg" style={{ background: BRAND.colors.panel }}>
@@ -264,9 +266,18 @@ function PlayerContent() {
       </div>
 
       <div className={`flex-1 grid grid-cols-12 gap-5 ${PLAYER_LAYOUT.sidePadding} py-3`}>
-        {/* Sol Panel: Nöbetçi, Hava, Tarih */}
+        {/* Sol Panel: Nöbetçi, Hava (DERS PROGRAMI KISMI SAĞA TAŞINDI) */}
         <div className="col-span-3">
-          <LeftPanel state={statusData.state} nextInSec={statusData.nextInSec} nextLabel={statusData.nextLabel} duties={bundle?.duties ?? []} weather={weather} now={now} specialDates={bundle?.specialDates ?? []} />
+          <LeftPanel
+            state={statusData.state}
+            nextInSec={statusData.nextInSec}
+            nextLabel={statusData.nextLabel}
+            duties={bundle?.duties ?? []}
+            weather={weather}
+            now={now}
+            specialDates={bundle?.specialDates ?? []}
+            hideStatus={true} // New prop to hide status from LeftPanel
+          />
         </div>
 
         {/* ORTA PANEL: Unified Player Queue */}
@@ -275,7 +286,7 @@ function PlayerContent() {
             {currentItem && currentCardList.length > 0 ? (
               <CardCarousel
                 cards={currentCardList}
-                index={0} // Always 0 because list has 1 item
+                index={0}
                 onVideoEnded={handleNext}
                 videoMaxSeconds={Math.max(30, rotation.videoSeconds || 300)}
               />
@@ -288,24 +299,44 @@ function PlayerContent() {
           </div>
         </div>
 
-        {/* Sağ Panel: Ders Programı */}
-        <div className="col-span-3 rounded-2xl overflow-hidden flex flex-col" style={{ background: BRAND.colors.panel }}>
-          <div className="px-3 py-2 border-b border-white/10">
-            <div className="flex items-center gap-2">
-              <span className="text-base">📅</span>
-              <span className="text-white font-bold text-sm">
-                {statusData.state === "lesson" && statusData.currentLessonNumber ? `${statusData.currentLessonNumber}. Ders` : "Ders Programı"}
-              </span>
+        {/* Sağ Panel: Ders Programı ve DURUM */}
+        <div className="col-span-3 flex flex-col gap-3">
+
+          {/* DURUM KUTUSU (Sol panelden buraya taşındı) */}
+          <div className="p-3 rounded-2xl flex flex-col justify-center gap-2" style={{ background: BRAND.colors.panel, minHeight: '140px' }}>
+            <div className="flex items-center justify-between">
+              <div className="text-3xl font-extrabold" style={{ color: statusColor }}>
+                {statusLabel}
+              </div>
+              {statusData.state === "lesson" && statusData.currentLessonNumber && (
+                <div className="bg-white/10 px-3 py-1 rounded text-xl font-bold text-white">
+                  {statusData.currentLessonNumber}. Ders
+                </div>
+              )}
+            </div>
+
+            <div className="mt-1">
+              <div className="text-4xl font-bold text-white tabular-nums tracking-tight">
+                {statusData.nextInSec == null ? "--:--" : formatCountdown(statusData.nextInSec)}
+              </div>
+              <div className="text-sm mt-1 opacity-70" style={{ color: BRAND.colors.muted }}>
+                {statusData.nextInSec ? `${Math.ceil(statusData.nextInSec / 60)} dakika sonra` : ""}
+                {statusData.nextLabel ? ` • ${statusData.nextLabel}` : ""}
+              </div>
             </div>
           </div>
-          <div className="flex-1 p-1.5">
-            <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
-              {currentClasses.map((entry, idx) => (
-                <div key={idx} className={`flex items-center gap-1.5 px-1.5 py-1 rounded ${entry.teacher_name ? "bg-white/10" : "bg-white/[0.03]"}`}>
-                  <div className="w-10 h-5 rounded bg-emerald-500/40 text-emerald-200 flex items-center justify-center text-[11px] font-bold shrink-0">{entry.class_name}</div>
-                  <div className={`flex-1 text-[11px] font-medium truncate ${entry.teacher_name ? "text-white" : "text-white/25"}`}>{entry.teacher_name || "—"}</div>
-                </div>
-              ))}
+
+          {/* DERS PROGRAMI LISTESI */}
+          <div className="flex-1 rounded-2xl overflow-hidden flex flex-col" style={{ background: BRAND.colors.panel }}>
+            <div className="flex-1 p-1.5 overflow-hidden">
+              <div className="grid grid-cols-2 gap-x-1.5 gap-y-1">
+                {currentClasses.map((entry, idx) => (
+                  <div key={idx} className={`flex items-center gap-1.5 px-1.5 py-1 rounded ${entry.teacher_name ? "bg-white/10" : "bg-white/[0.03]"}`}>
+                    <div className="w-10 h-5 rounded bg-emerald-500/40 text-emerald-200 flex items-center justify-center text-[11px] font-bold shrink-0">{entry.class_name}</div>
+                    <div className={`flex-1 text-[11px] font-medium truncate ${entry.teacher_name ? "text-white" : "text-white/25"}`}>{entry.teacher_name || "—"}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

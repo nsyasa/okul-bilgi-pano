@@ -12,6 +12,7 @@ export function LeftPanel(props: {
   weather: WeatherNow | null;
   now: Date;
   specialDates?: SpecialDate[];
+  hideStatus?: boolean; /* New prop */
 }) {
   const stateLabel =
     props.state === "lesson" ? "DERS" : props.state === "break" ? "TENEFÜS" : props.state === "lunch" ? "ÖĞLE ARASI" : "OKUL DIŞI";
@@ -78,73 +79,77 @@ export function LeftPanel(props: {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="p-2 rounded-xl" style={{ background: BRAND.colors.bg }}>
-          <div className="text-3xl font-extrabold" style={{ color: stateColor }}>
-            {stateLabel}
-          </div>
-        </div>
+      <div className="space-y-2 mt-2">
+        {!props.hideStatus && (
+          <>
+            <div className="p-2 rounded-xl" style={{ background: BRAND.colors.bg }}>
+              <div className="text-3xl font-extrabold" style={{ color: stateColor }}>
+                {stateLabel}
+              </div>
+            </div>
 
-        <div className="p-2 rounded-xl" style={{ background: BRAND.colors.bg }}>
-          <div className="text-2xl font-bold text-white tabular-nums">
-            {props.nextInSec == null ? "--:--" : formatCountdown(props.nextInSec)}
-          </div>
-          <div className="text-xs mt-1" style={{ color: BRAND.colors.muted }}>
-            {props.nextInSec ? `${Math.ceil(props.nextInSec / 60)} dakika sonra` : ""}
-            {props.nextLabel ? ` • ${props.nextLabel}` : ""}
-          </div>
-        </div>
+            <div className="p-2 rounded-xl" style={{ background: BRAND.colors.bg }}>
+              <div className="text-2xl font-bold text-white tabular-nums">
+                {props.nextInSec == null ? "--:--" : formatCountdown(props.nextInSec)}
+              </div>
+              <div className="text-xs mt-1" style={{ color: BRAND.colors.muted }}>
+                {props.nextInSec ? `${Math.ceil(props.nextInSec / 60)} dakika sonra` : ""}
+                {props.nextLabel ? ` • ${props.nextLabel}` : ""}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="p-2 rounded-xl" style={{ background: BRAND.colors.bg }}>
           <div className="mt-1 space-y-1">
-          {props.duties?.length ? (
-            (() => {
-              // Emoji mapping
-              const getEmoji = (area: string | null) => {
-                if (!area) return "👤";
-                const areaUpper = area.toUpperCase();
-                if (areaUpper.includes("BAHÇE")) return "🌳";
-                if (areaUpper.includes("GİRİŞ")) return "🚪";
-                if (areaUpper.includes("1.KAT") || areaUpper.includes("1. KAT")) return "1️⃣";
-                if (areaUpper.includes("2.KAT") || areaUpper.includes("2. KAT")) return "2️⃣";
-                if (areaUpper.includes("3.KAT") || areaUpper.includes("3. KAT")) return "3️⃣";
-                if (areaUpper.includes("İDARE") || areaUpper.includes("NÖBETÇİ İDARECİ")) return "👔";
-                return "👤";
-              };
-
-              // İdareciyi en üste, bahçeyi en alta taşı
-              const sorted = [...props.duties].sort((a, b) => {
-                const getPriority = (area: string | null): number => {
-                  if (!area) return 5;
-                  const upper = area.toUpperCase();
-                  if (upper.includes("İDARE") || upper.includes("NÖBETÇİ İDARECİ")) return 0;
-                  if (upper.includes("3.KAT") || upper.includes("3. KAT")) return 1;
-                  if (upper.includes("2.KAT") || upper.includes("2. KAT")) return 2;
-                  if (upper.includes("1.KAT") || upper.includes("1. KAT")) return 3;
-                  if (upper.includes("GİRİŞ")) return 4;
-                  if (upper.includes("BAHÇE")) return 5;
-                  return 5;
+            {props.duties?.length ? (
+              (() => {
+                // Emoji mapping
+                const getEmoji = (area: string | null) => {
+                  if (!area) return "👤";
+                  const areaUpper = area.toUpperCase();
+                  if (areaUpper.includes("BAHÇE")) return "🌳";
+                  if (areaUpper.includes("GİRİŞ")) return "🚪";
+                  if (areaUpper.includes("1.KAT") || areaUpper.includes("1. KAT")) return "1️⃣";
+                  if (areaUpper.includes("2.KAT") || areaUpper.includes("2. KAT")) return "2️⃣";
+                  if (areaUpper.includes("3.KAT") || areaUpper.includes("3. KAT")) return "3️⃣";
+                  if (areaUpper.includes("İDARE") || areaUpper.includes("NÖBETÇİ İDARECİ")) return "👔";
+                  return "👤";
                 };
-                return getPriority(a.area) - getPriority(b.area);
-              });
 
-              return sorted.slice(0, 6).map((d) => (
-                <div key={d.id} className="p-2 rounded-lg flex items-center gap-2" style={{ background: BRAND.colors.bg }}>
-                  <div className="text-3xl">{getEmoji(d.area)}</div>
-                  <div className="flex flex-col">
-                    <div className="text-xs font-semibold" style={{ color: BRAND.colors.muted }}>
-                      {d.area ?? ""}
+                // İdareciyi en üste, bahçeyi en alta taşı
+                const sorted = [...props.duties].sort((a, b) => {
+                  const getPriority = (area: string | null): number => {
+                    if (!area) return 5;
+                    const upper = area.toUpperCase();
+                    if (upper.includes("İDARE") || upper.includes("NÖBETÇİ İDARECİ")) return 0;
+                    if (upper.includes("3.KAT") || upper.includes("3. KAT")) return 1;
+                    if (upper.includes("2.KAT") || upper.includes("2. KAT")) return 2;
+                    if (upper.includes("1.KAT") || upper.includes("1. KAT")) return 3;
+                    if (upper.includes("GİRİŞ")) return 4;
+                    if (upper.includes("BAHÇE")) return 5;
+                    return 5;
+                  };
+                  return getPriority(a.area) - getPriority(b.area);
+                });
+
+                return sorted.slice(0, 6).map((d) => (
+                  <div key={d.id} className="p-2 rounded-lg flex items-center gap-2" style={{ background: BRAND.colors.bg }}>
+                    <div className="text-3xl">{getEmoji(d.area)}</div>
+                    <div className="flex flex-col">
+                      <div className="text-xs font-semibold" style={{ color: BRAND.colors.muted }}>
+                        {d.area ?? ""}
+                      </div>
+                      <div className="text-xl font-black text-white">{d.name}</div>
                     </div>
-                    <div className="text-xl font-black text-white">{d.name}</div>
                   </div>
-                </div>
-              ));
-            })()
-          ) : (
-            <div className="text-base" style={{ color: BRAND.colors.muted }}>
-              Bugün için kayıt yok.
-            </div>
-          )}
+                ));
+              })()
+            ) : (
+              <div className="text-base" style={{ color: BRAND.colors.muted }}>
+                Bugün için kayıt yok.
+              </div>
+            )}
           </div>
         </div>
 
