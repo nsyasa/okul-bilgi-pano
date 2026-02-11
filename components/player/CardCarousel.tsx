@@ -116,12 +116,12 @@ function YouTubeEmbed({
           containerRef.current.appendChild(childDiv);
         }
 
-        // Get origin safely for SSR/CSR
-        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        // Cleaned up config - often adding 'origin' into playerVars causes more issues with 'host'
+        const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
 
         player = new window.YT.Player(childId, {
           videoId,
-          host: 'https://www.youtube.com', // Explicitly set host to prevent some origin errors
+          host: 'https://www.youtube.com',
           playerVars: {
             autoplay: 1,
             mute: 1,
@@ -131,8 +131,8 @@ function YouTubeEmbed({
             playsinline: 1,
             disablekb: 1,
             fs: 0,
-            origin: origin, // Ensure origin is set
-            enablejsapi: 1, // Enable JS API
+            enablejsapi: 1,
+            origin: origin, // Keep origin, but rely on host
           },
           events: {
             onReady: (e) => {
@@ -152,7 +152,7 @@ function YouTubeEmbed({
             onError: (e) => {
               if (isCancelled) return;
               console.error("YT Error:", e.data);
-              onError(); // Skip on playback error
+              onError();
             }
           },
         });
@@ -252,14 +252,14 @@ export function CardCarousel(props: {
 
                 {/* Images (Fills remaining space) */}
                 {(card.data.image_urls?.length ?? 0) > 0 ? (
-                  <div className="flex-1 min-h-[50%] relative rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
+                  <div className="flex-1 relative rounded-xl overflow-hidden min-h-[50%]" style={{ background: BRAND.colors.bg }}>
                     <img
                       src={card.data.image_urls![imageIndex]}
                       alt="Görsel"
                       className="w-full h-full object-contain"
                       onError={(e) => {
-                        console.error("Image Load Error:", e.currentTarget.src);
-                        e.currentTarget.style.display = 'none';
+                        // If primary image fails, try to hide it
+                        e.currentTarget.style.display = "none";
                       }}
                     />
                     {card.data.image_urls!.length > 1 && (
@@ -269,14 +269,13 @@ export function CardCarousel(props: {
                     )}
                   </div>
                 ) : card.data.image_url ? (
-                  <div className="flex-1 min-h-[50%] relative rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
+                  <div className="flex-1 relative rounded-xl overflow-hidden min-h-[50%]" style={{ background: BRAND.colors.bg }}>
                     <img
                       src={card.data.image_url}
                       alt="Görsel"
                       className="w-full h-full object-contain"
                       onError={(e) => {
-                        console.error("Image Load Error:", e.currentTarget.src);
-                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.style.display = "none";
                       }}
                     />
                   </div>
