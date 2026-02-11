@@ -116,9 +116,6 @@ function YouTubeEmbed({
           containerRef.current.appendChild(childDiv);
         }
 
-        // Cleaned up config - often adding 'origin' into playerVars causes more issues with 'host'
-        const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
-
         player = new window.YT.Player(childId, {
           videoId,
           host: 'https://www.youtube.com',
@@ -132,7 +129,7 @@ function YouTubeEmbed({
             disablekb: 1,
             fs: 0,
             enablejsapi: 1,
-            origin: origin, // Keep origin, but rely on host
+            origin: window.location.origin,
           },
           events: {
             onReady: (e) => {
