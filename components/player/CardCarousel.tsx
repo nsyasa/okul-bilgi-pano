@@ -64,73 +64,65 @@ export function buildCards(params: {
   return [...v, ...a, ...e, ...a.slice(0, 6), ...i];
 }
 
-export function CardCarousel(props: {
-  cards: ReturnType<typeof buildCards>;
-  index: number;
-  onVideoEnded?: () => void;
-  videoMaxSeconds?: number; // Watchdog: ENDED gelmezse bu süre sonunda otomatik geç
+// -- INTERNAL COMPONENTS --
+
+// Isolated YouTube Player Component to prevent DOM conflicts
+function YouTubeEmbed({
+  videoId,
+  onEnded,
+  onError,
+  maxSeconds
+}: {
+  videoId: string;
+  onEnded: () => void;
+  onError: () => void;
+  maxSeconds: number;
 }) {
-  const card = props.cards[props.index % Math.max(1, props.cards.length)];
-  const [imageIndex, setImageIndex] = useState(0);
-  const videoId = card?.kind === "video" ? extractYouTubeId(card.data.url) : null;
-  // Unique key for video to track changes even with same video
-  const videoKey = videoId ? `${videoId}-${props.index}` : null;
-
-  // Otomatik resim carousel (3 saniyede bir)
-  useEffect(() => {
-    if (card?.kind !== "announcement") return;
-    const images = card.data.image_urls ?? [];
-    if (images.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setImageIndex((prev) => (prev + 1) % images.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [card]);
-
-  // Card değiştiğinde resim index'ini sıfırla
-  useEffect(() => {
-    setImageIndex(0);
-  }, [props.index]);
-
-  // YouTube player refs
-  const playerContainerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const hasEndedRef = useRef(false);
 
-  // Video bitti callback'i (çift çağrı önleme)
-  const handleVideoEnded = useCallback(() => {
-    if (hasEndedRef.current) return;
-    hasEndedRef.current = true;
-    if (DEBUG) console.log(`🎥 Video ended: ${videoId}`);
-    props.onVideoEnded?.();
-  }, [videoId, props.onVideoEnded]);
-
-  // YouTube IFrame API ile video bitişi tespiti
   useEffect(() => {
-    if (!videoKey || !videoId || !props.onVideoEnded) return;
-    if (!playerContainerRef.current) return;
+    if (!containerRef.current) return;
 
-    hasEndedRef.current = false;
     let player: YTPlayer | null = null;
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let watchdogTimer: ReturnType<typeof setTimeout> | null = null;
     let isCancelled = false;
 
-    const initPlayer = async () => {
+    const cleanup = () => {
+      isCancelled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (watchdogTimer) clearTimeout(watchdogTimer);
+      if (player) {
+        try {
+          // IMPORTANT: Destroying the player removes the iframe from DOM.
+          // We must be careful not to let React try to remove it afterwards if it confuses the tree.
+          // Usually, React removes the container div, so destroying player is fine.
+          player.destroy();
+        } catch { }
+      }
+      playerRef.current = null;
+    };
+
+    const init = async () => {
       try {
         await loadYouTubeIframeApi(10000);
         if (isCancelled) return;
 
-        if (DEBUG) console.log(`🎥 Creating YT.Player for: ${videoId}`);
+        // Create a dedicated child div for the player to replace
+        // This prevents React from losing track of the main containerRef
+        const childId = `yt-player-${videoId}-${Date.now()}`;
+        const childDiv = document.createElement("div");
+        childDiv.id = childId;
 
-        // Container'a unique id ver
-        const containerId = `yt-player-${videoId}-${Date.now()}`;
-        if (playerContainerRef.current) {
-          playerContainerRef.current.id = containerId;
+        // Clear container and append new child
+        if (containerRef.current) {
+          containerRef.current.innerHTML = "";
+          containerRef.current.appendChild(childDiv);
         }
 
-        player = new window.YT.Player(containerId, {
+        player = new window.YT.Player(childId, {
           videoId,
           playerVars: {
             autoplay: 1,
@@ -141,88 +133,108 @@ export function CardCarousel(props: {
             playsinline: 1,
             disablekb: 1,
             fs: 0,
+            origin: window.location.origin, // Fix origin error
           },
           events: {
-            onReady: (event) => {
+            onReady: (e) => {
               if (isCancelled) return;
-              if (DEBUG) console.log(`🎥 Video ready: ${videoId}`);
-              // Autoplay kısıtlarına karşı
-              event.target.mute();
-              event.target.playVideo();
+              e.target.mute();
+              e.target.playVideo();
             },
-            onStateChange: (event) => {
+            onStateChange: (e) => {
               if (isCancelled) return;
-              // ENDED = 0
-              if (event.data === 0) {
-                if (DEBUG) console.log(`🎥 Video state ENDED: ${videoId}`);
-                handleVideoEnded();
+              if (e.data === 0) { // ENDED
+                if (!hasEndedRef.current) {
+                  hasEndedRef.current = true;
+                  onEnded();
+                }
               }
             },
-            onError: (event) => {
+            onError: (e) => {
               if (isCancelled) return;
-              if (DEBUG) console.log(`🎥 Video error (${event.data}): ${videoId}`);
-              // Hata durumunda video atla
-              handleVideoEnded();
-            },
+              console.error("YT Error:", e.data);
+              onError();
+            }
           },
         });
-
         playerRef.current = player;
-      } catch (err) {
-        if (isCancelled) return;
-        if (DEBUG) console.log(`🎥 YT API yüklenemedi, fallback timer başlatılıyor`);
-        // API yüklenemezse 5 saniye sonra atla
-        fallbackTimer = setTimeout(() => {
-          if (!isCancelled) {
-            handleVideoEnded();
-          }
-        }, 5000);
+      } catch (e) {
+        if (!isCancelled) onError();
       }
     };
 
-    initPlayer();
+    init();
 
-    // Watchdog: ENDED event gelmezse videoMaxSeconds sonra otomatik geç
-    const watchdogMs = (props.videoMaxSeconds ?? 300) * 1000; // default 5 dakika
-    const maxDurationTimer = setTimeout(() => {
+    // Watchdog
+    watchdogTimer = setTimeout(() => {
       if (!isCancelled && !hasEndedRef.current) {
-        if (DEBUG) console.log(`🎥 Watchdog timeout (${props.videoMaxSeconds ?? 300}s), skipping: ${videoId}`);
-        handleVideoEnded();
+        onEnded();
       }
-    }, watchdogMs);
+    }, maxSeconds * 1000);
 
-    return () => {
-      isCancelled = true;
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-      clearTimeout(maxDurationTimer);
-      if (player) {
-        try {
-          player.destroy();
-          if (DEBUG) console.log(`🎥 Player destroyed: ${videoId}`);
-        } catch {
-          // Player already destroyed
-        }
-      }
-      playerRef.current = null;
-    };
-  }, [videoKey, videoId, props.onVideoEnded, handleVideoEnded]);
+    return cleanup;
+  }, [videoId, maxSeconds, onEnded, onError]);
 
-  if (!card) {
-    return null;
-  }
+  // Using a stable container ref that React controls.
+  // We manually manage the children of this div in useEffect.
+  return <div ref={containerRef} className="absolute inset-0 w-full h-full bg-black" />;
+}
+
+
+export function CardCarousel(props: {
+  cards: ReturnType<typeof buildCards>;
+  index: number;
+  onVideoEnded?: () => void;
+  videoMaxSeconds?: number;
+}) {
+  const card = props.cards[props.index % Math.max(1, props.cards.length)];
+  const [imageIndex, setImageIndex] = useState(0);
+  const videoId = card?.kind === "video" ? extractYouTubeId(card.data.url) : null;
+
+  // Unique key to force remount when video changes
+  const videoKey = videoId ? `${videoId}-${props.index}` : null;
+
+  // Auto-rotate images
+  useEffect(() => {
+    if (card?.kind !== "announcement") return;
+    const images = card.data.image_urls ?? [];
+    if (images.length <= 1) return;
+    const interval = setInterval(() => setImageIndex((prev) => (prev + 1) % images.length), 3000);
+    return () => clearInterval(interval);
+  }, [card]);
+
+  useEffect(() => setImageIndex(0), [props.index]);
+
+  // Determine Content Type
+  const isVideo = card?.kind === "video" && !!videoId;
+
+  if (!card) return null;
 
   return (
     <div className="h-full rounded-2xl overflow-hidden relative flex flex-col" style={{ background: BRAND.colors.panel }}>
-      {card.kind !== "video" ? (
+
+      {isVideo ? (
+        // Video Render
+        <div className="flex-1 relative bg-black">
+          <YouTubeEmbed
+            key={videoKey} // Critical: Forces fresh component for each video
+            videoId={videoId!}
+            onEnded={() => props.onVideoEnded?.()}
+            onError={() => props.onVideoEnded?.()} // Skip on error
+            maxSeconds={props.videoMaxSeconds ?? 300}
+          />
+        </div>
+      ) : (
+        // Standard Content Render
         <>
-          {/* Başlık - Minimal, Resme yer açmak için küçültüldü */}
-          <div className="px-6 py-2 pb-3" style={{ borderBottom: `2px solid ${BRAND.colors.brand}` }}>
+          {/* Header */}
+          <div className="px-6 py-2 pb-3 shrink-0" style={{ borderBottom: `2px solid ${BRAND.colors.brand}` }}>
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <div className="hidden text-[10px] tracking-widest font-bold opacity-60 uppercase" style={{ color: BRAND.colors.brand }}>
+                <div className="text-[10px] tracking-widest font-bold opacity-60 uppercase hidden" style={{ color: BRAND.colors.brand }}>
                   {card.kind === "announcement" ? "DUYURU" : card.kind === "event" ? "ETKİNLİK" : "OKUL"}
                 </div>
-                <div className="text-2xl font-black text-white leading-none truncate">
+                <div className="text-2xl font-black text-white leading-none truncate pt-1">
                   {card.kind === "announcement" ? card.data.title : card.kind === "event" ? card.data.title : card.data.title}
                 </div>
               </div>
@@ -236,34 +248,43 @@ export function CardCarousel(props: {
             </div>
           </div>
 
-          {/* İçerik */}
-          <div className="flex-1 flex flex-col p-4 pt-2 gap-2 overflow-hidden">
+          {/* Content Body */}
+          <div className="flex-1 flex flex-col p-4 pt-2 gap-2 overflow-hidden min-h-0">
             {card.kind === "announcement" ? (
               <>
-                {/* Metin Kutusu - Opsiyonel, varsa göster ama küçük */}
+                {/* Text (Optional) */}
                 {card.data.body && (
-                  <div className="p-3 rounded-lg shrink-0 max-h-[25%]" style={{ background: BRAND.colors.bg }}>
-                    <div className="text-base leading-snug text-white/90 whitespace-pre-line line-clamp-2 md:line-clamp-3">{card.data.body}</div>
+                  <div className="p-3 rounded-lg shrink-0 max-h-[30%] overflow-hidden" style={{ background: BRAND.colors.bg }}>
+                    <div className="text-base leading-snug text-white/90 whitespace-pre-line line-clamp-3">{card.data.body}</div>
                   </div>
                 )}
 
-                {/* Resim Galerisi - Kalan tüm alan */}
-                {card.data.image_urls && card.data.image_urls.length > 0 ? (
-                  <div className="flex-1 min-h-0">
-                    <div className="relative w-full h-full rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-                      <Image src={card.data.image_urls[imageIndex]} alt="Duyuru görseli" fill className="object-contain" />
-                      {card.data.image_urls.length > 1 && (
-                        <div className="absolute bottom-2 right-2 px-3 py-1 rounded-lg text-sm font-bold" style={{ background: "rgba(0,0,0,0.6)", color: "white", backdropFilter: "blur(4px)" }}>
-                          {imageIndex + 1} / {card.data.image_urls.length}
-                        </div>
-                      )}
-                    </div>
+                {/* Images (Fills remaining space) */}
+                {(card.data.image_urls?.length ?? 0) > 0 ? (
+                  <div className="flex-1 min-h-0 relative rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
+                    <Image
+                      src={card.data.image_urls![imageIndex]}
+                      alt="Görsel"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      priority
+                    />
+                    {card.data.image_urls!.length > 1 && (
+                      <div className="absolute bottom-2 right-2 px-3 py-1 rounded-lg text-sm font-bold bg-black/60 text-white backdrop-blur-sm">
+                        {imageIndex + 1} / {card.data.image_urls!.length}
+                      </div>
+                    )}
                   </div>
                 ) : card.data.image_url ? (
-                  <div className="flex-1 min-h-0">
-                    <div className="relative w-full h-full rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-                      <Image src={card.data.image_url} alt="Duyuru görseli" fill className="object-contain" />
-                    </div>
+                  <div className="flex-1 min-h-0 relative rounded-xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
+                    <Image
+                      src={card.data.image_url}
+                      alt="Görsel"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
                   </div>
                 ) : null}
               </>
@@ -284,15 +305,6 @@ export function CardCarousel(props: {
             )}
           </div>
         </>
-      ) : (
-        <div className="flex-1">
-          <div className="relative w-full h-full rounded-2xl overflow-hidden" style={{ background: BRAND.colors.bg }}>
-            <div
-              ref={playerContainerRef}
-              className="absolute inset-0 w-full h-full"
-            />
-          </div>
-        </div>
       )}
     </div>
   );
