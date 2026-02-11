@@ -15,6 +15,7 @@ interface YTPlayer {
 
 interface YTPlayerOptions {
     videoId: string;
+    host?: string; // Support for host parameter (e.g. www.youtube-nocookie.com)
     playerVars?: Record<string, number | string>;
     events?: {
         onReady?: (event: { target: YTPlayer }) => void;
