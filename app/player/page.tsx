@@ -79,6 +79,25 @@ function PlayerContent() {
   const [mounted, setMounted] = useState(false);
   const [realNow, setRealNow] = useState(() => new Date());
 
+  // #region agent log
+  useEffect(() => {
+    fetch("/api/agent-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        runId: "pre-fix",
+        hypothesisId: "B",
+        location: "app/player/page.tsx:PlayerContent:mount",
+        message: "PlayerContent mounted",
+        data: {
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => { });
+  }, []);
+  // #endregion
+
   // Effective time
   const now = preview.isActive ? preview.effectiveNow : realNow;
   const nowTR = useMemo(() => new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" })), [now]);
@@ -168,9 +187,12 @@ function PlayerContent() {
   // Navigation
   const handleNext = useCallback(() => {
     if (playlist.length === 0) return;
-    if (DEBUG) console.log(`⏭️ Next item triggered. Current index: ${playlistIndex}`);
-    setPlaylistIndex(prev => (prev + 1) % playlist.length);
-  }, [playlist.length, playlistIndex]);
+    setPlaylistIndex((prev) => {
+      const next = (prev + 1) % playlist.length;
+      if (DEBUG) console.log(`Next item triggered. Current index: ${prev}, next: ${next}`);
+      return next;
+    });
+  }, [playlist.length]);
 
   // Timer for non-video items
   useEffect(() => {
@@ -238,6 +260,28 @@ function PlayerContent() {
     return [];
   }, [currentItem]);
 
+  // #region agent log
+  useEffect(() => {
+    fetch("/api/agent-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        runId: "pre-fix",
+        hypothesisId: "B",
+        location: "app/player/page.tsx:PlayerContent:playlist",
+        message: "playlist / current item snapshot",
+        data: {
+          playlistLength: playlist.length,
+          currentItemKind: currentItem?.kind ?? null,
+          currentHasVideo: !!currentItem?.videoData,
+          currentHasAnnouncement: !!currentItem?.announcementData,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => { });
+  }, [playlist.length, currentItem?.kind, !!currentItem?.videoData, !!currentItem?.announcementData]);
+  // #endregion
+
   const combinedTicker = useMemo(() => (bundle?.ticker ?? []) as TickerItem[], [bundle?.ticker]);
 
   // Determine State Labels/Colors
@@ -288,7 +332,7 @@ function PlayerContent() {
                 cards={currentCardList}
                 index={0}
                 onVideoEnded={handleNext}
-                videoMaxSeconds={Math.max(30, rotation.videoSeconds || 300)}
+                videoMaxSeconds={Math.max(5, rotation.videoSeconds || 30)}
               />
             ) : (
               <div className="h-full flex items-center justify-center text-white/30 flex-col gap-2">
@@ -356,3 +400,4 @@ export default function PlayerPage() {
     </Suspense>
   );
 }
+
