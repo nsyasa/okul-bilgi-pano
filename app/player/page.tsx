@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { BRAND } from "@/lib/branding";
 import { PLAYER_LAYOUT } from "@/lib/layoutConfig";
 import { fetchWeatherNow } from "@/lib/weather";
@@ -71,9 +72,42 @@ type PlaylistItem = {
   original: Announcement | YouTubeVideo;
   videoData?: YouTubeVideo;
   announcementData?: Announcement;
+  // Debug / Slideshow Meta
+  groupId?: string;
+  slideIndex?: number;
+  slideCount?: number;
+  imageSrc?: string;
 };
 
+function DebugOverlay({ item, playlistIndex, total, debugMode }: { item: PlaylistItem | null, playlistIndex: number, total: number, debugMode: boolean }) {
+  if (!debugMode) return null;
+  return (
+    <div className="fixed top-2 right-2 z-[9999] bg-black/80 text-white text-[10px] font-mono p-2 rounded pointer-events-none flex flex-col gap-1 shadow-xl border border-white/20">
+      <div className="font-bold text-yellow-400 border-b border-white/20 pb-1 mb-1">DEBUG MODE</div>
+      <div>Playlist: <span className="text-green-400">{playlistIndex + 1}</span> / {total}</div>
+      {item && (
+        <>
+          <div>ID: <span className="opacity-70">{item.id}</span></div>
+          <div>Kind: <span className="text-blue-300">{item.kind}</span></div>
+          <div>Flow: {item.flow_order}</div>
+          <div>Dur: {item.duration}s</div>
+          {item.slideCount && (
+            <div className="mt-1 pt-1 border-t border-white/20 text-cyan-300">
+              Slide: {item.slideIndex}/{item.slideCount}
+              <div className="truncate max-w-[200px] opacity-60">{item.imageSrc}</div>
+              {item.groupId && <div className="text-[9px] opacity-50">Grp: {item.groupId}</div>}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function PlayerContent() {
+  const searchParams = useSearchParams();
+  const debugMode = searchParams.get("debug") === "1";
+
   const { bundle, fromCache, lastSyncAt, isOffline, cacheTimestamp, isCacheStale, lastSuccessfulFetchAt, consecutiveFetchFailures, lastError } = usePlayerBundle();
   const preview = usePreviewTime();
   const [mounted, setMounted] = useState(false);
@@ -81,20 +115,7 @@ function PlayerContent() {
 
   // #region agent log
   useEffect(() => {
-    fetch("/api/agent-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        runId: "pre-fix",
-        hypothesisId: "B",
-        location: "app/player/page.tsx:PlayerContent:mount",
-        message: "PlayerContent mounted",
-        data: {
-          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => { });
+    // ... agent log code ...
   }, []);
   // #endregion
 
@@ -107,8 +128,8 @@ function PlayerContent() {
 
   const [weather, setWeather] = useState<WeatherNow | null>(null);
 
-  // Playlist State
-  const [playlistIndex, setPlaylistIndex] = useState(0);
+  // Playlist State - We keep ID to track across re-renders/fetches
+  const [currentId, setCurrentId] = useState<string | null>(null);
 
   // Watchdog
   const { showConnectionOverlay, dailyLimitReached } = usePlayerWatchdog(lastSuccessfulFetchAt, consecutiveFetchFailures);
@@ -124,7 +145,7 @@ function PlayerContent() {
     return (bundle?.settings?.rotation as PlayerRotationSettings) ?? { enabled: true, videoSeconds: 30, imageSeconds: 10, textSeconds: 10 };
   }, [bundle?.settings]);
 
-  // Build Playlist - Now depends on minuteTick instead of nowTR to prevent rapid regeneration
+  // Build Playlist - Strictly Deterministic
   const playlist = useMemo<PlaylistItem[]>(() => {
     if (!bundle) return [];
 
@@ -132,42 +153,61 @@ function PlayerContent() {
     const _nowForFilter = new Date(minuteTick * 60000); // Approximate time for filtering
 
     // 1. Announcements
-    // 1. Announcements
     (bundle.announcements || []).forEach(a => {
       if (a.status !== 'published') return;
       if (!inWindow(a, _nowForFilter)) return;
 
       const isImageMode = a.display_mode === 'image';
 
-      // Collect unique images for splitting (trim and remove empties)
-      const rawImages = [a.image_url, ...(a.image_urls || [])]
-        .map(s => (s || "").trim())
-        .filter(s => s.length > 0);
-      const uniqueImages = Array.from(new Set(rawImages));
+      // DETERMINISTIC IMAGE MERGE ORDER
+      // 1. image_urls array order
+      // 2. image_url appended at end
+      // 3. dedupe keeping first occurrence
+      const rawImages: string[] = [];
+      if (Array.isArray(a.image_urls)) {
+        rawImages.push(...a.image_urls);
+      }
+      if (a.image_url) {
+        rawImages.push(a.image_url);
+      }
+
+      const uniqueImages: string[] = [];
+      const seen = new Set<string>();
+      rawImages.forEach(img => {
+        const s = (img || "").trim();
+        if (s.length > 0 && !seen.has(s)) {
+          seen.add(s);
+          uniqueImages.push(s);
+        }
+      });
 
       if (isImageMode && uniqueImages.length > 0) {
         // Create a playlist item for EACH image
         uniqueImages.forEach((src, idx) => {
-          // Create a virtual announcement for this specific slide
+          // Create a virtual announcement component for this specific slide
           const slideData = {
             ...a,
             image_url: src,
-            image_urls: [src], // Force single image
+            image_urls: [src], // Force single image for the component
           };
 
           list.push({
             id: `${a.id}#img:${idx}`,
             kind: "announcement",
-            flow_order: (a.flow_order ?? 0) * 1000 + idx, // Maintain sequence
+            flow_order: (a.flow_order ?? 0) * 1000 + idx, // Scale order to allow sub-items
             created_at: a.created_at,
-            // Per image duration
             duration: Math.max(3, rotation.imageSeconds || 10),
             original: a,
-            announcementData: slideData
+            announcementData: slideData,
+            // Meta
+            groupId: a.id,
+            slideIndex: idx + 1,
+            slideCount: uniqueImages.length,
+            imageSrc: src
           });
         });
       } else {
-        // Standard behavior for text/other modes or fallback if no images
+        // Standard behavior
         const duration = isImageMode ? rotation.imageSeconds : rotation.textSeconds;
 
         list.push({
@@ -191,39 +231,80 @@ function PlayerContent() {
         id: v.id,
         kind: "video",
         flow_order: (v.flow_order ?? 0) * 1000,
-        created_at: v.created_at || new Date().toISOString(), // Assumes created_at exists on video (it does in DB)
-        duration: Math.max(5, rotation.videoSeconds || 30), // Max duration for watchdog
+        created_at: v.created_at || new Date().toISOString(),
+        duration: Math.max(5, rotation.videoSeconds || 30),
         original: v,
         videoData: v
       });
     });
 
-    // 3. Sort
-    return list.sort((a, b) => {
-      if (a.flow_order !== b.flow_order) return a.flow_order - b.flow_order;
-      // Secondary: created_at desc (newer first if same order)
+    // 3. Deterministic Sort
+    // flow_order (asc) -> created_at (desc) -> id (asc)
+    const sorted = list.sort((a, b) => {
+      // Primary: Flow Order
+      if (a.flow_order !== b.flow_order) {
+        return a.flow_order - b.flow_order;
+      }
+      // Secondary: Created At (Newer first?? Usually yes, but let's stick to standard behavior)
+      // If timestamps are equal or missing, it falls through
       const tA = new Date(a.created_at || 0).getTime();
       const tB = new Date(b.created_at || 0).getTime();
-      return tB - tA;
+      if (tA !== tB) {
+        return tB - tA; // Newer first
+      }
+      // Tertiary: ID (Strict tie-breaker)
+      return a.id.localeCompare(b.id);
     });
 
-  }, [bundle, minuteTick, rotation]);
+    if (debugMode) {
+      console.log("PLAYLIST REBUILT (Snapshot first 10):", sorted.slice(0, 10).map(i => ({ id: i.id, flow: i.flow_order, idx: i.slideIndex })));
+    }
 
-  // Current Item
-  const currentItem = useMemo(() => {
-    if (playlist.length === 0) return null;
-    return playlist[playlistIndex % playlist.length];
-  }, [playlist, playlistIndex]);
+    return sorted;
+
+  }, [bundle, minuteTick, rotation, debugMode]);
+
+  // Current Item Logic - STABLE via ID
+  const { currentItem, playlistIndex } = useMemo(() => {
+    if (playlist.length === 0) return { currentItem: null, playlistIndex: -1 };
+
+    let idx = -1;
+    if (currentId) {
+      idx = playlist.findIndex(p => p.id === currentId);
+    }
+
+    if (idx === -1) {
+      // Fallback: if we lost position or first run, start at 0
+      idx = 0;
+    }
+
+    return { currentItem: playlist[idx], playlistIndex: idx };
+  }, [playlist, currentId]);
 
   // Navigation
   const handleNext = useCallback(() => {
     if (playlist.length === 0) return;
-    setPlaylistIndex((prev) => {
-      const next = (prev + 1) % playlist.length;
-      if (DEBUG) console.log(`Next item triggered. Current index: ${prev}, next: ${next}`);
-      return next;
-    });
-  }, [playlist.length]);
+
+    // Calculate NEXT index based on current found index
+    // This is safer than relying on state index which might be stale during rebuilds
+    const currentIdx = currentId ? playlist.findIndex(p => p.id === currentId) : -1;
+    const itemsLen = playlist.length;
+
+    // If current is gone, or we are at start, or whatever
+    const nextIdx = (currentIdx + 1) % itemsLen;
+    const nextItem = playlist[nextIdx];
+
+    if (DEBUG || debugMode) console.log(`⏩ Advancing: ${currentIdx} -> ${nextIdx} (${nextItem.id})`);
+
+    setCurrentId(nextItem.id);
+  }, [playlist, currentId, debugMode]);
+
+  // Ensure currentId is set on mount or first valid playlist
+  useEffect(() => {
+    if (!currentId && playlist.length > 0) {
+      setCurrentId(playlist[0].id);
+    }
+  }, [playlist, currentId]);
 
   // Timer for non-video items
   useEffect(() => {
@@ -236,24 +317,17 @@ function PlayerContent() {
     const safeDurationSeconds = (Number.isFinite(d) && d > 0) ? d : 10;
     const durationMs = safeDurationSeconds * 1000;
 
-    if (DEBUG) console.log(`⏱️ Item timer started: ${currentItem.id} (${durationMs}ms)`);
+    if (DEBUG || debugMode) console.log(`⏱️ Item timer: ${currentItem.id} (${durationMs}ms)`);
 
     const timer = setTimeout(() => {
       handleNext();
     }, durationMs);
 
     return () => clearTimeout(timer);
-  }, [currentItem, handleNext, rotation.enabled]);
-
-  // Reset index if playlist shrinks
-  useEffect(() => {
-    if (playlistIndex >= playlist.length && playlist.length > 0) {
-      setPlaylistIndex(0);
-    }
-  }, [playlist.length, playlistIndex]);
-
+  }, [currentItem, handleNext, rotation.enabled, debugMode]);
 
   const statusData = useMemo(() => {
+    // ... existing status logic ...
     const b = bundle;
     if (!b) return { state: "closed" as const, nextInSec: null as number | null, nextLabel: null as string | null, slots: [] as BellSlot[], currentLessonNumber: null as number | null };
     const dateKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(nowTR);
@@ -335,6 +409,9 @@ function PlayerContent() {
     <div className="min-h-screen w-screen flex flex-col overflow-hidden" style={{ background: BRAND.colors.bg }}>
       {preview.isActive && <PreviewBanner previewTimeStr={preview.previewTimeStr} remainingTtl={preview.remainingTtl} onExit={preview.exitPreview} />}
 
+      {/* DEBUG OVERLAY */}
+      <DebugOverlay item={currentItem} playlistIndex={playlistIndex} total={playlist.length} debugMode={debugMode} />
+
       {/* Overlays */}
       {showConnectionOverlay && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.8)" }}>
@@ -386,7 +463,7 @@ function PlayerContent() {
 
         {/* Sağ Panel: Ders Programı ve DURUM */}
         <div className="col-span-3 flex flex-col gap-3">
-
+          {/* ... existing right panel content ... */}
           {/* DURUM KUTUSU (Sol panelden buraya taşındı) */}
           <div className="p-3 rounded-2xl flex flex-col justify-center gap-2" style={{ background: BRAND.colors.panel, minHeight: '140px' }}>
             <div className="flex items-center justify-between">
