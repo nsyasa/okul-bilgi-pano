@@ -233,7 +233,7 @@ function DutyTemplateInner({ profile }: any) {
             <div className="text-emerald-300 font-medium text-sm">Nasıl Çalışır?</div>
             <div className="text-emerald-300/70 text-xs mt-1">
               • Bu şablon her hafta otomatik olarak uygulanır.<br />
-              • Belirli bir güne özel değişiklik yapmak için "Tarihe Göre" sayfasını kullanın.<br />
+              • Belirli bir güne özel değişiklik yapmak için &quot;Tarihe Göre&quot; sayfasını kullanın.<br />
               • Player önce tarihe özel kayıt var mı bakar, yoksa bu şablonu kullanır.
             </div>
           </div>
