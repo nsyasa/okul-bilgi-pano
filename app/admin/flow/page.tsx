@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 // Last Sync: 2026-02-10 20:25 (Unified Flow Update)
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -165,6 +166,14 @@ function FlowInner({ profile }: { profile: any }) {
         setSavingRotation(false);
     };
 
+    /**
+     * Normalize flow_order values for a list so each item gets a unique,
+     * sequential value (10, 20, 30…). This prevents swap from being a no-op
+     * when two items share the same flow_order.
+     */
+    const normalizeFlowOrders = (list: FlowItem[]): FlowItem[] =>
+        list.map((it, i) => ({ ...it, flow_order: (i + 1) * 10 }));
+
     const move = async (item: FlowItem, direction: "up" | "down", listContext: FlowItem[]) => {
         if (saving) return;
 
@@ -174,60 +183,56 @@ function FlowInner({ profile }: { profile: any }) {
         const targetIndex = direction === "up" ? index - 1 : index + 1;
         if (targetIndex < 0 || targetIndex >= listContext.length) return;
 
-        const targetItem = listContext[targetIndex];
+        // Snapshot for rollback
+        const prevItems = items;
 
-        // Optimistic Update
-        // We swap their order in the full 'items' list.
-        // Finding them in main list
-        const mainIndexA = items.findIndex(x => x.id === item.id);
-        const mainIndexB = items.findIndex(x => x.id === targetItem.id);
+        // Step 1: Normalize the active list so every item has a unique flow_order
+        const normalized = normalizeFlowOrders(listContext);
 
-        const newItems = [...items];
-        const temp = newItems[mainIndexA];
-        newItems[mainIndexA] = newItems[mainIndexB];
-        newItems[mainIndexB] = temp;
+        // Step 2: Swap the two items in the normalized list
+        const swapped = [...normalized];
+        const tmp = swapped[index];
+        swapped[index] = swapped[targetIndex];
+        swapped[targetIndex] = tmp;
+        // Re-assign flow_order after swap
+        const reordered = swapped.map((it, i) => ({ ...it, flow_order: (i + 1) * 10 }));
 
-        // Recalculate flow_order based on new positions?
-        // Actually simpler: Swap their flow_order values.
-        const orderA = targetItem.flow_order;
-        const orderB = item.flow_order;
+        // Step 3: Merge back into full items list
+        const reorderedMap = new Map(reordered.map(it => [it.id, it.flow_order]));
+        const newItems = items.map(it => {
+            const newOrder = reorderedMap.get(it.id);
+            return newOrder != null ? { ...it, flow_order: newOrder } : it;
+        });
 
-        // Update local state details to reflect swap
-        newItems[mainIndexA].flow_order = orderA;
-        newItems[mainIndexB].flow_order = orderB;
-
-        // Re-sort locally to ensure UI consistency
+        // Re-sort
         newItems.sort((a, b) => {
             if (a.flow_order !== b.flow_order) return a.flow_order - b.flow_order;
             return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         });
 
+        // Optimistic UI update
         setItems(newItems);
         setSaving(true);
 
         try {
-            // Update DB
-            const updates = [];
+            // Build DB updates for all items whose flow_order changed
+            const updates: Promise<any>[] = [];
+            for (const ri of reordered) {
+                const orig = listContext.find(x => x.id === ri.id);
+                if (!orig || orig.flow_order === ri.flow_order) continue;
 
-            // Update Item A
-            if (item.kind === 'announcement') {
-                updates.push(sb.from("announcements").update({ flow_order: orderA }).eq("id", item.id));
-            } else {
-                updates.push(sb.from("youtube_videos").update({ flow_order: orderA }).eq("id", item.id));
-            }
-
-            // Update Item B
-            if (targetItem.kind === 'announcement') {
-                updates.push(sb.from("announcements").update({ flow_order: orderB }).eq("id", targetItem.id));
-            } else {
-                updates.push(sb.from("youtube_videos").update({ flow_order: orderB }).eq("id", targetItem.id));
+                if (ri.kind === 'announcement') {
+                    updates.push(Promise.resolve(sb.from("announcements").update({ flow_order: ri.flow_order }).eq("id", ri.id)));
+                } else {
+                    updates.push(Promise.resolve(sb.from("youtube_videos").update({ flow_order: ri.flow_order }).eq("id", ri.id)));
+                }
             }
 
             await Promise.all(updates);
             toast.success("Sıralama güncellendi");
         } catch (e) {
-            toast.error("Sıralama hatası");
-            await load(); // Revert
+            toast.error("Sıralama hatası – geri alınıyor");
+            setItems(prevItems); // Rollback
         } finally {
             setSaving(false);
         }
@@ -384,6 +389,7 @@ function FlowInner({ profile }: { profile: any }) {
                                     onToggle={() => toggleStatus(item)}
                                     onDelete={() => deleteItem(item)}
                                     rotation={rotation}
+                                    isLast={idx === activeItems.length - 1}
                                 />
                             ))}
                             {activeItems.length === 0 && (
@@ -415,6 +421,7 @@ function FlowInner({ profile }: { profile: any }) {
                                         onDelete={() => deleteItem(item)}
                                         rotation={rotation}
                                         isPassive
+                                        isLast={idx === passiveItems.length - 1}
                                     />
                                 ))}
                             </div>
@@ -427,7 +434,7 @@ function FlowInner({ profile }: { profile: any }) {
     );
 }
 
-function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation, isPassive }: {
+function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation, isPassive, isLast }: {
     item: FlowItem,
     index: number,
     total: number,
@@ -435,13 +442,17 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
     onToggle: () => void,
     onDelete: () => void,
     rotation: PlayerRotationSettings,
-    isPassive?: boolean
+    isPassive?: boolean,
+    isLast?: boolean
 }) {
+    const router = useRouter();
     const icon = item.kind === 'video' ? '🎥' : item.type_label === 'Resim' ? '🖼️' : '📢';
     const duration = rotation[item.duration_source] || 10;
 
+    const editRoute = item.kind === 'announcement' ? '/admin/announcements' : '/admin/youtube';
+
     return (
-        <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${isPassive ? 'bg-black/20 border-white/5' : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'}`}>
+        <div className={`group flex items-center justify-between p-3 rounded-xl border transition-all ${isPassive ? 'bg-black/20 border-white/5' : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'} ${isLast ? 'border-b-0' : ''}`}>
             <div className="flex items-center gap-4 overflow-hidden flex-1">
                 {/* Active/Passive Dot */}
                 <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.is_active ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-red-500/30'}`} title={item.is_active ? "Yayında" : "Pasif"}></div>
@@ -488,6 +499,15 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                         }`}
                 >
                     {item.is_active ? "Pasife Al" : "Yayına Al"}
+                </button>
+
+                {/* Edit Button */}
+                <button
+                    onClick={() => router.push(editRoute)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                    title="Düzenle"
+                >
+                    ✏️ Düzenle
                 </button>
 
                 {/* Move Buttons (Only for active) */}

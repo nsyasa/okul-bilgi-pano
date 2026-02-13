@@ -1,78 +1,28 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { BRAND } from "@/lib/branding";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { PrimaryButton, SecondaryButton } from "./FormBits";
-
-type ImageInfo = {
-  file: File;
-  preview: string;
-  width: number;
-  height: number;
-  ratio: number;
-  sizeKB: number;
-  warnings: string[];
-};
+import { ImageCropperModal, type CropResult } from "./ImageCropperModal";
 
 export function MultiImageUploader({ value, onChange }: { value: string[] | null; onChange: (urls: string[]) => void }) {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [pendingImages, setPendingImages] = useState<ImageInfo[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  // Crop modal state
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [cropQueue, setCropQueue] = useState<File[]>([]); // remaining files to crop
+
   const urls = value ?? [];
 
-  const validateImage = (file: File): Promise<ImageInfo> => {
-    return new Promise((resolve, reject) => {
-      // Basic type check
-      if (!file.type.startsWith("image/")) {
-        reject(new Error(`"${file.name}" bir resim dosyası değil.`));
-        return;
-      }
-
-      const img = new Image();
-      const preview = URL.createObjectURL(file);
-
-      img.onload = () => {
-        const width = img.naturalWidth;
-        const height = img.naturalHeight;
-        const ratio = width / height;
-        const sizeKB = Math.round(file.size / 1024);
-        const warnings: string[] = [];
-
-        // Boyut kontrolü
-        if (width < 1280 || height < 720) {
-          warnings.push(`⚠️ Düşük çözünürlük: ${width}x${height} (Min: 1280x720)`);
-        }
-
-        // En-boy oranı kontrolü (16:9 = 1.77)
-        if (ratio < 1.3 || ratio > 2.0) {
-          warnings.push(`⚠️ En-boy oranı TV için uygun değil (${ratio.toFixed(2)}:1)`);
-        }
-
-        // Dosya boyutu kontrolü
-        if (sizeKB > 5000) {
-          warnings.push(`⚠️ Büyük dosya: ${sizeKB}KB (Tavsiye: <5MB)`);
-        }
-
-        resolve({ file, preview, width, height, ratio, sizeKB, warnings });
-      };
-
-      img.onerror = () => {
-        reject(new Error("Resim yüklenemedi"));
-      };
-
-      img.src = preview;
-    });
-  };
-
-  const processFiles = async (files: File[]) => {
-    if (!files.length) return;
-
-    if (uploading || pendingImages.length > 0) {
-      setMsg("⚠️ Önce mevcut işlemi tamamlayın.");
+  /* ── File selection → open crop modal (queue if multiple) ── */
+  const startCropFlow = useCallback((files: File[]) => {
+    const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+    if (!imageFiles.length) {
+      setMsg("⚠️ Geçerli bir resim dosyası seçilmedi.");
       return;
     }
 
@@ -82,76 +32,81 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
       return;
     }
 
-    const filesToProcess = files.slice(0, remainingSlots);
-    setMsg("Resimler kontrol ediliyor...");
+    const toProcess = imageFiles.slice(0, remainingSlots);
+    // Open first in modal, queue the rest
+    setCropFile(toProcess[0]);
+    setCropQueue(toProcess.slice(1));
+    setMsg("");
+  }, [urls.length]);
 
-    try {
-      const validatedImages = await Promise.all(filesToProcess.map(validateImage));
-      setPendingImages(validatedImages);
-      setMsg(validatedImages.some(img => img.warnings.length > 0)
-        ? "⚠️ Bazı resimlerde uyarılar var. Yine de yükleyebilirsiniz."
-        : "✅ Resimler hazır. Yükle butonuna basın.");
-    } catch (err: any) {
-      setMsg(`Hata: ${err.message}`);
-    } finally {
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  };
-
-  const selectFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const selectFiles = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    await processFiles(files);
-  };
+    if (inputRef.current) inputRef.current.value = "";
+    startCropFlow(files);
+  }, [startCropFlow]);
 
-  const uploadPending = async () => {
-    if (!pendingImages.length) return;
+  /* ── Upload processed blob ── */
+  const uploadBlob = useCallback(async (blob: Blob, suggestedName: string): Promise<string> => {
+    const sb = supabaseBrowser();
+    const path = `announcements/${suggestedName}`;
+    const { data, error } = await sb.storage.from("pano-media").upload(path, blob, {
+      contentType: "image/webp",
+      upsert: true,
+    });
+    if (error) throw error;
+    if (!data) throw new Error("Upload failed – no data");
+    const { data: pub } = sb.storage.from("pano-media").getPublicUrl(data.path);
+    return pub.publicUrl;
+  }, []);
 
+  /* ── Crop confirmed ── */
+  const handleCropConfirm = useCallback(async (result: CropResult) => {
     setUploading(true);
-    setMsg("Yükleniyor...");
-
+    setMsg("Yükleniyor…");
     try {
-      const sb = supabaseBrowser();
-      const newUrls: string[] = [];
+      const publicUrl = await uploadBlob(result.blob, result.suggestedName);
 
-      for (const imgInfo of pendingImages) {
-        const ext = imgInfo.file.name.split(".").pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
-        const { data, error } = await sb.storage.from("pano-media").upload(fileName, imgInfo.file, { upsert: false });
-
-        if (error) throw error;
-        if (!data) throw new Error("Upload failed, no data returned");
-
-        const { data: publicData } = sb.storage.from("pano-media").getPublicUrl(data.path);
-        newUrls.push(publicData.publicUrl);
-
-        // Preview URL'lerini temizle
-        URL.revokeObjectURL(imgInfo.preview);
-      }
-
-      onChange([...urls, ...newUrls]);
-      setPendingImages([]);
-      setMsg(`✅ ${newUrls.length} resim yüklendi!`);
+      // Dedupe
+      const newUrls = urls.includes(publicUrl) ? urls : [...urls, publicUrl];
+      onChange(newUrls);
+      setMsg("✅ Görsel yüklendi!");
     } catch (err: any) {
-      setMsg(`Hata: ${err.message}`);
+      setMsg(`Hata: ${err?.message ?? "Yükleme başarısız"}`);
     } finally {
       setUploading(false);
     }
-  };
 
-  const cancelPending = () => {
-    pendingImages.forEach(img => URL.revokeObjectURL(img.preview));
-    setPendingImages([]);
-    setMsg("");
-  };
+    // Close current and advance queue
+    setCropFile(null);
+    if (cropQueue.length > 0) {
+      // Small delay to let React settle
+      setTimeout(() => {
+        setCropFile(cropQueue[0]);
+        setCropQueue((prev) => prev.slice(1));
+      }, 100);
+    }
+  }, [urls, onChange, uploadBlob, cropQueue]);
+
+  /* ── Crop cancelled ── */
+  const handleCropCancel = useCallback(() => {
+    setCropFile(null);
+    // If there are more files in the queue, skip this one
+    if (cropQueue.length > 0) {
+      setTimeout(() => {
+        setCropFile(cropQueue[0]);
+        setCropQueue((prev) => prev.slice(1));
+      }, 100);
+    }
+  }, [cropQueue]);
 
   const remove = (index: number) => {
     onChange(urls.filter((_, i) => i !== index));
   };
 
-  // Drag Handlers
+  /* ── Drag handlers ── */
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    if (uploading || pendingImages.length > 0 || urls.length >= 10) return;
+    if (uploading || urls.length >= 10) return;
     setIsDragging(true);
   };
 
@@ -163,16 +118,14 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-
-    if (uploading || pendingImages.length > 0 || urls.length >= 10) return;
-
+    if (uploading || urls.length >= 10) return;
     const files = Array.from(e.dataTransfer.files);
-    await processFiles(files);
+    startCropFlow(files);
   };
 
   return (
     <div>
-      {/* Yüklenmiş Resimler */}
+      {/* ── Uploaded images ── */}
       {urls.length > 0 && (
         <div className="mb-4">
           <div className="text-xs font-semibold mb-2" style={{ color: BRAND.colors.muted }}>
@@ -196,49 +149,8 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
         </div>
       )}
 
-      {/* Bekleyen Resimler (Önizleme) */}
-      {pendingImages.length > 0 && (
-        <div className="mb-4 p-4 rounded-xl" style={{ background: BRAND.colors.panel }}>
-          <div className="text-xs font-semibold mb-3" style={{ color: BRAND.colors.muted }}>
-            Yüklenecek Resimler ({pendingImages.length})
-          </div>
-          <div className="space-y-3">
-            {pendingImages.map((img, idx) => (
-              <div key={idx} className="flex gap-3 items-start">
-                <img src={img.preview} alt="Önizleme" className="w-20 h-20 rounded-lg object-cover" style={{ background: BRAND.colors.bg }} />
-                <div className="flex-1 text-xs">
-                  <div className="text-white font-semibold">{img.file.name}</div>
-                  <div style={{ color: BRAND.colors.muted }}>
-                    {img.width}x{img.height} • {img.ratio.toFixed(2)}:1 • {img.sizeKB}KB
-                  </div>
-                  {img.warnings.map((w, i) => (
-                    <div key={i} className="text-xs mt-1" style={{ color: BRAND.colors.warn }}>
-                      {w}
-                    </div>
-                  ))}
-                  {img.warnings.length === 0 && (
-                    <div className="text-xs mt-1" style={{ color: BRAND.colors.ok }}>
-                      ✅ Uygun resim
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2 mt-4">
-            <PrimaryButton type="button" onClick={uploadPending} disabled={uploading}>
-              {uploading ? "Yükleniyor..." : `${pendingImages.length} Resmi Yükle`}
-            </PrimaryButton>
-            <SecondaryButton type="button" onClick={cancelPending} disabled={uploading}>
-              İptal
-            </SecondaryButton>
-          </div>
-        </div>
-      )}
-
-      {/* Resim Seçme Butonu ve DragDrop Alanı */}
-      {urls.length + pendingImages.length < 10 && (
+      {/* ── File select / drop zone ── */}
+      {urls.length < 10 && (
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -254,14 +166,14 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
             multiple
             className="hidden"
             onChange={selectFiles}
-            disabled={uploading || pendingImages.length > 0}
+            disabled={uploading}
           />
 
           <div className="mb-3 text-4xl">📸</div>
           <div className="text-center">
             <PrimaryButton
               type="button"
-              disabled={uploading || pendingImages.length > 0}
+              disabled={uploading}
               onClick={() => inputRef.current?.click()}
             >
               + Resim Seç
@@ -271,16 +183,30 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
             veya resimleri buraya sürükleyip bırakın
           </div>
           <div className="text-xs mt-4 text-center" style={{ color: BRAND.colors.muted }}>
-            Max 10 resim • Önerilen: 1920x1080 (16:9) • Max 5MB
+            Max 10 resim • Otomatik 16:9 + WebP dönüşüm • Kırp veya Sığdır seçeneği
           </div>
         </div>
       )}
 
       {msg && (
-        <div className="text-sm mt-3 p-2 rounded" style={{ background: BRAND.colors.bg, color: msg.includes("✅") ? BRAND.colors.ok : BRAND.colors.warn }}>
+        <div
+          className="text-sm mt-3 p-2 rounded"
+          style={{
+            background: BRAND.colors.bg,
+            color: msg.includes("✅") ? BRAND.colors.ok : BRAND.colors.warn,
+          }}
+        >
           {msg}
         </div>
       )}
+
+      {/* ── Crop Modal ── */}
+      <ImageCropperModal
+        open={!!cropFile}
+        file={cropFile}
+        onCancel={handleCropCancel}
+        onConfirm={handleCropConfirm}
+      />
     </div>
   );
 }
