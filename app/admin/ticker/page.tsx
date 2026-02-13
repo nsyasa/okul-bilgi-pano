@@ -188,7 +188,7 @@ function TickerInner({ profile }: any) {
           <div className="text-center py-16 px-6 text-white/30 text-sm border border-white/5 border-dashed rounded-xl bg-white/[0.01]">
             <div className="text-4xl mb-3 opacity-30">📝</div>
             <p className="font-medium text-white/50 mb-1">Henüz ticker mesajı yok</p>
-            <p className="text-xs opacity-60">Yukarıdaki "Yeni Mesaj" butonuyla ekleyebilirsiniz.</p>
+            <p className="text-xs opacity-60">Yukarıdaki &quot;Yeni Mesaj&quot; butonuyla ekleyebilirsiniz.</p>
           </div>
         )}
       </div>

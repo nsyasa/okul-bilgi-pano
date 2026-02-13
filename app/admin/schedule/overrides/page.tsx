@@ -268,7 +268,7 @@ function OverridesInner({ profile }: { profile: Profile }) {
                       + Ekle
                     </button>
                   </div>
-                  <div className="mt-2 text-[10px] text-white/30 ml-1">* İpucu: Hızlı eklemek için etiket alanında Enter'a basabilirsiniz.</div>
+                  <div className="mt-2 text-[10px] text-white/30 ml-1">* İpucu: Hızlı eklemek için etiket alanında Enter&apos;a basabilirsiniz.</div>
                 </div>
 
               </div>

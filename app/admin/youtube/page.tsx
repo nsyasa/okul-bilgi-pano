@@ -203,7 +203,7 @@ function YouTubeInner({ profile }: any) {
           <div className="col-span-full text-center py-16 px-6 text-white/30 text-sm border border-white/5 border-dashed rounded-xl bg-white/[0.01]">
             <div className="text-4xl mb-3 opacity-30">🎬</div>
             <p className="font-medium text-white/50 mb-1">Henüz video eklenmemiş</p>
-            <p className="text-xs opacity-60">"Yeni Video" butonuyla YouTube videoları ekleyebilirsiniz.</p>
+            <p className="text-xs opacity-60">&quot;Yeni Video&quot; butonuyla YouTube videoları ekleyebilirsiniz.</p>
           </div>
         )}
       </div>
