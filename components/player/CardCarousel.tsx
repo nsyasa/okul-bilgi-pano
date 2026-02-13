@@ -98,6 +98,12 @@ function YouTubeEmbed({
   const durationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Stable refs for callbacks so the main effect doesn't re-run ──
+  const onEndedRef = useRef(onEnded);
+  const onErrorRef = useRef(onError);
+  useEffect(() => { onEndedRef.current = onEnded; }, [onEnded]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
+
   const clearTimers = useCallback(() => {
     if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
     if (durationTimerRef.current) clearTimeout(durationTimerRef.current);
@@ -107,6 +113,10 @@ function YouTubeEmbed({
     watchdogTimerRef.current = null;
   }, []);
 
+  /**
+   * endOnce: fires onEnded/onError EXACTLY ONCE per video mount.
+   * Uses refs so it never changes identity → main useEffect never re-runs.
+   */
   const endOnce = useCallback(
     (reason: string, data?: Record<string, unknown>) => {
       if (endedOnceRef.current) return;
@@ -114,7 +124,6 @@ function YouTubeEmbed({
 
       clearTimers();
 
-      // (Opsiyonel) Debug log: neden geçti?
       fetch("/api/agent-log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,15 +131,16 @@ function YouTubeEmbed({
           runId: "youtube-guarantee",
           location: "components/player/CardCarousel.tsx:YouTubeEmbed:endOnce",
           message: `YouTube endOnce: ${reason}`,
-          data: { videoId, maxSeconds, ...data },
+          data: { videoId, ...data },
           timestamp: Date.now(),
         }),
       }).catch(() => { });
 
-      if (reason.startsWith("error")) onError();
-      else onEnded();
+      if (reason.startsWith("error")) onErrorRef.current();
+      else onEndedRef.current();
     },
-    [clearTimers, maxSeconds, onEnded, onError, videoId]
+    // clearTimers and videoId are stable; this callback identity is stable.
+    [clearTimers, videoId]
   );
 
   useEffect(() => {
@@ -180,13 +190,9 @@ function YouTubeEmbed({
             onReady: (event) => {
               if (cancelled) return;
               try {
-                // autoplay çoğu cihazda mute ister
                 event.target.mute();
                 event.target.playVideo();
               } catch { }
-
-              // duration fallback: PLAYING’de de tekrar deneyeceğiz
-              // (bazı videolarda duration ilk anda 0 gelir)
             },
             onStateChange: (event) => {
               if (cancelled) return;
@@ -197,7 +203,6 @@ function YouTubeEmbed({
               }
 
               if (event.data === window.YT.PlayerState.PLAYING) {
-                // Kısa video için duration fallback timer (ENDED gelmezse)
                 let tries = 0;
 
                 const pollDuration = () => {
@@ -213,7 +218,6 @@ function YouTubeEmbed({
 
                   if (Number.isFinite(dur) && dur > 0) {
                     const effective = Math.min(dur, Math.max(1, maxSeconds));
-                    // Eğer video gerçekten maxSeconds'tan kısa ise, erken geçiş timerı kur
                     if (effective < Math.max(1, maxSeconds)) {
                       if (durationTimerRef.current) clearTimeout(durationTimerRef.current);
                       durationTimerRef.current = setTimeout(
@@ -251,6 +255,8 @@ function YouTubeEmbed({
       cleanupPlayer();
       clearTimers();
     };
+    // endOnce identity is now stable (only depends on clearTimers+videoId)
+    // so this effect only re-runs when videoId or maxSeconds actually change.
   }, [videoId, maxSeconds, clearTimers, endOnce]);
 
   if (useFallback) {
@@ -401,7 +407,7 @@ export function CardCarousel(props: {
         </div>
       ) : (
         <>
-          <div className="shrink-0 px-6 py-2 pb-3" style={{ borderBottom: `2px solid ${BRAND.colors.brand}` }}>
+          <div className="shrink-0 px-6 py-2 pb-3">
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
                 <div
