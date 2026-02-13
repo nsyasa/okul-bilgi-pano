@@ -327,8 +327,8 @@ function DutiesInner({ profile }: { profile: any }) {
             <div className="text-emerald-300 font-medium text-sm">Nasıl Çalışır?</div>
             <div className="text-emerald-300/70 text-xs mt-1">
               • Bu program her hafta otomatik olarak uygulanır.<br />
-              • Excel'den yüklemek için CSV formatında dosya kullanın (GÜN, ALAN, ÖĞRETMEN sütunları).<br />
-              • Değişiklik yaptıktan sonra "Kaydet" butonuna tıklamayı unutmayın.
+              • Excel&apos;den yüklemek için CSV formatında dosya kullanın (GÜN, ALAN, ÖĞRETMEN sütunları).<br />
+              • Değişiklik yaptıktan sonra &quot;Kaydet&quot; butonuna tıklamayı unutmayın.
             </div>
           </div>
         </div>

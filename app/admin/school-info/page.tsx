@@ -99,7 +99,7 @@ function SchoolInfoInner({ profile }: any) {
         <div>
           <div className="text-white text-2xl font-bold tracking-tight">Okul Bilgileri</div>
           <div className="text-sm mt-1 text-white/40">
-            Player'da sol panelde dönen bilgi kartları ve genel okul ayarları.
+            Player&apos;da sol panelde dönen bilgi kartları ve genel okul ayarları.
           </div>
         </div>
         <div className="flex gap-3">

@@ -193,7 +193,7 @@ function OverridesInner({ profile }: { profile: Profile }) {
                     <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-3xl mb-1 grayscale opacity-50">📅</div>
                     <div className="font-medium text-white/50">Henüz slot eklenmemiş</div>
                     <div className="text-xs max-w-xs opacity-50 leading-relaxed">
-                      Manuel olarak aşağıdan slot ekleyebilir veya sağ üstteki "Örnek Plan Yükle" butonunu kullanabilirsiniz.
+                      Manuel olarak aşağıdan slot ekleyebilir veya sağ üstteki &quot;Örnek Plan Yükle&quot; butonunu kullanabilirsiniz.
                     </div>
                   </div>
                 ) : (
