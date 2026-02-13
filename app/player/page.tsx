@@ -231,7 +231,11 @@ function PlayerContent() {
     if (!currentItem) return;
     if (currentItem.kind === 'video') return; // Wait for onVideoEnded
 
-    const durationMs = currentItem.duration * 1000;
+    // STRICT DURATION CHECK
+    const d = Number(currentItem.duration);
+    const safeDurationSeconds = (Number.isFinite(d) && d > 0) ? d : 10;
+    const durationMs = safeDurationSeconds * 1000;
+
     if (DEBUG) console.log(`⏱️ Item timer started: ${currentItem.id} (${durationMs}ms)`);
 
     const timer = setTimeout(() => {
@@ -291,26 +295,32 @@ function PlayerContent() {
     return [];
   }, [currentItem]);
 
-  // #region agent log
+  // #region agent log safely
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    // Fire and forget, don't block anything
     fetch("/api/agent-log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        runId: "pre-fix",
-        hypothesisId: "B",
-        location: "app/player/page.tsx:PlayerContent:playlist",
-        message: "playlist / current item snapshot",
+        runId: "post-fix-Timer",
+        location: "app/player/page.tsx",
+        message: "playlist item changed",
         data: {
-          playlistLength: playlist.length,
-          currentItemKind: currentItem?.kind ?? null,
-          currentHasVideo: !!currentItem?.videoData,
-          currentHasAnnouncement: !!currentItem?.announcementData,
+          id: currentItem?.id,
+          idx: playlistIndex,
+          len: playlist.length,
+          dur: currentItem?.duration
         },
         timestamp: Date.now(),
       }),
+      signal
     }).catch(() => { });
-  }, [playlist.length, currentItem?.kind, !!currentItem?.videoData, !!currentItem?.announcementData]);
+
+    return () => controller.abort();
+  }, [currentItem?.id, playlistIndex, playlist.length]);
   // #endregion
 
   const combinedTicker = useMemo(() => (bundle?.ticker ?? []) as TickerItem[], [bundle?.ticker]);
@@ -357,7 +367,7 @@ function PlayerContent() {
 
         {/* ORTA PANEL: Unified Player Queue */}
         <div className="col-span-6 flex flex-col">
-          <div className="flex-1 rounded-2xl overflow-hidden relative" style={{ background: BRAND.colors.panel }}>
+          <div key={currentItem?.id} className="flex-1 rounded-2xl overflow-hidden relative" style={{ background: BRAND.colors.panel }}>
             {currentItem && currentCardList.length > 0 ? (
               <CardCarousel
                 cards={currentCardList}

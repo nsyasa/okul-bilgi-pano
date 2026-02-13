@@ -170,25 +170,21 @@ export function CardCarousel(props: {
   useEffect(() => {
     if (!card) return;
 
+    const controller = new AbortController();
     fetch("/api/agent-log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        runId: "pre-fix",
-        hypothesisId: "A",
-        location: "components/player/CardCarousel.tsx:CardCarousel",
+        runId: "post-fix-Carousel",
+        location: "components/player/CardCarousel.tsx",
         message: "card selected",
-        data: {
-          kind: card.kind,
-          videoId: card.kind === "video" ? videoId : null,
-          imageUrl: card.kind === "announcement" ? safeUrlForLog(card.data.image_url) : null,
-          imageUrlsCount: card.kind === "announcement" ? (card.data.image_urls?.length ?? 0) : null,
-          imageUrls0: card.kind === "announcement" ? safeUrlForLog(card.data.image_urls?.[0] ?? null) : null,
-        },
-        timestamp: Date.now(),
+        videoId: isVideo ? videoId : undefined
       }),
+      signal: controller.signal
     }).catch(() => { });
-  }, [card, videoId]);
+
+    return () => controller.abort();
+  }, [card?.kind, videoId]);
 
   useEffect(() => {
     // Flattened playlist strategy: No internal interval.
