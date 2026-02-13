@@ -132,23 +132,54 @@ function PlayerContent() {
     const _nowForFilter = new Date(minuteTick * 60000); // Approximate time for filtering
 
     // 1. Announcements
+    // 1. Announcements
     (bundle.announcements || []).forEach(a => {
       if (a.status !== 'published') return;
       if (!inWindow(a, _nowForFilter)) return;
 
-      // Determine type/duration
-      const isImage = a.display_mode === 'image';
-      const duration = isImage ? rotation.imageSeconds : rotation.textSeconds;
+      const isImageMode = a.display_mode === 'image';
 
-      list.push({
-        id: a.id,
-        kind: "announcement",
-        flow_order: a.flow_order ?? 0,
-        created_at: a.created_at,
-        duration: Math.max(5, duration || 10),
-        original: a,
-        announcementData: a
-      });
+      // Collect unique images for splitting (trim and remove empties)
+      const rawImages = [a.image_url, ...(a.image_urls || [])]
+        .map(s => (s || "").trim())
+        .filter(s => s.length > 0);
+      const uniqueImages = Array.from(new Set(rawImages));
+
+      if (isImageMode && uniqueImages.length > 0) {
+        // Create a playlist item for EACH image
+        uniqueImages.forEach((src, idx) => {
+          // Create a virtual announcement for this specific slide
+          const slideData = {
+            ...a,
+            image_url: src,
+            image_urls: [src], // Force single image
+          };
+
+          list.push({
+            id: `${a.id}#img:${idx}`,
+            kind: "announcement",
+            flow_order: (a.flow_order ?? 0) * 1000 + idx, // Maintain sequence
+            created_at: a.created_at,
+            // Per image duration
+            duration: Math.max(3, rotation.imageSeconds || 10),
+            original: a,
+            announcementData: slideData
+          });
+        });
+      } else {
+        // Standard behavior for text/other modes or fallback if no images
+        const duration = isImageMode ? rotation.imageSeconds : rotation.textSeconds;
+
+        list.push({
+          id: a.id,
+          kind: "announcement",
+          flow_order: (a.flow_order ?? 0) * 1000,
+          created_at: a.created_at,
+          duration: Math.max(5, duration || 10),
+          original: a,
+          announcementData: a
+        });
+      }
     });
 
     // 2. Videos
@@ -159,7 +190,7 @@ function PlayerContent() {
       list.push({
         id: v.id,
         kind: "video",
-        flow_order: v.flow_order ?? 0,
+        flow_order: (v.flow_order ?? 0) * 1000,
         created_at: v.created_at || new Date().toISOString(), // Assumes created_at exists on video (it does in DB)
         duration: Math.max(5, rotation.videoSeconds || 30), // Max duration for watchdog
         original: v,
