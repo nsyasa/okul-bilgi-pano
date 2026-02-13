@@ -159,13 +159,19 @@ export function CardCarousel(props: {
   onVideoEnded?: () => void;
   videoMaxSeconds?: number;
 }) {
+  const { onVideoEnded } = props;
   const card = props.cards[props.index % Math.max(1, props.cards.length)];
   const [imageIndex, setImageIndex] = useState(0);
   const [failedImageSrcs, setFailedImageSrcs] = useState<string[]>([]);
 
   const videoId = card?.kind === "video" ? extractYouTubeId(card.data.url) : null;
   const videoKey = videoId ? `${videoId}-${props.index}` : null;
-  const handleVideoEnded = useCallback(() => props.onVideoEnded?.(), [props.onVideoEnded]);
+
+  // Derived state BEFORE hooks
+  const isVideo = card?.kind === "video" && !!videoId;
+  const isImageMode = card?.kind === "announcement" && card.data.display_mode === "image";
+
+  const handleVideoEnded = useCallback(() => onVideoEnded?.(), [onVideoEnded]);
 
   const announcementImages = useMemo(() => {
     if (card?.kind !== "announcement") return [];
@@ -205,12 +211,7 @@ export function CardCarousel(props: {
     }).catch(() => { });
 
     return () => controller.abort();
-  }, [card?.kind, videoId]);
-
-  useEffect(() => {
-    // Flattened playlist strategy: No internal interval.
-    // Each slide stays for its externally defined duration.
-  }, []);
+  }, [card, videoId, isVideo]); // Correct dependencies
 
   useEffect(() => {
     setImageIndex(0);
@@ -227,9 +228,6 @@ export function CardCarousel(props: {
   const handleImageError = useCallback((src: string) => {
     setFailedImageSrcs((prev) => (prev.includes(src) ? prev : [...prev, src]));
   }, []);
-
-  const isVideo = card?.kind === "video" && !!videoId;
-  const isImageMode = card?.kind === "announcement" && card.data.display_mode === "image";
 
   if (!card) return null;
 
