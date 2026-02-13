@@ -24,6 +24,9 @@ import type {
 
 const DEBUG = false;
 
+// ✅ Ticker asla kapanmasın diye güvenli alt boşluk (ticker + padding)
+const TICKER_SAFE_PX = 96;
+
 // Helper to check if item is in valid time window
 function inWindow(item: { start_at?: string | null; end_at?: string | null }, now: Date) {
   const t = now.getTime();
@@ -148,7 +151,8 @@ function PlayerContent() {
   const searchParams = useSearchParams();
   const debugMode = searchParams.get("debug") === "1";
 
-  const { bundle, fromCache, lastSyncAt, isOffline, lastSuccessfulFetchAt, consecutiveFetchFailures } = usePlayerBundle();
+  const { bundle, fromCache, lastSyncAt, isOffline, lastSuccessfulFetchAt, consecutiveFetchFailures } =
+    usePlayerBundle();
   const preview = usePreviewTime();
 
   const [mounted, setMounted] = useState(false);
@@ -167,7 +171,10 @@ function PlayerContent() {
   const [currentId, setCurrentId] = useState<string | null>(null);
 
   // Watchdog overlay
-  const { showConnectionOverlay, dailyLimitReached } = usePlayerWatchdog(lastSuccessfulFetchAt, consecutiveFetchFailures);
+  const { showConnectionOverlay, dailyLimitReached } = usePlayerWatchdog(
+    lastSuccessfulFetchAt,
+    consecutiveFetchFailures
+  );
 
   useEffect(() => setMounted(true), []);
   useInterval(() => setRealNow(new Date()), 1000);
@@ -437,8 +444,12 @@ function PlayerContent() {
 
   if (!mounted) return null;
 
+  // ✅ En dış container: ticker alanı kadar paddingBottom bırak (fixed ticker ile çakışmasın)
   return (
-    <div className="min-h-screen w-screen flex flex-col overflow-hidden" style={{ background: BRAND.colors.bg }}>
+    <div
+      className="min-h-screen w-screen flex flex-col overflow-hidden"
+      style={{ background: BRAND.colors.bg, paddingBottom: `${TICKER_SAFE_PX}px` }}
+    >
       {preview.isActive && (
         <PreviewBanner previewTimeStr={preview.previewTimeStr} remainingTtl={preview.remainingTtl} onExit={preview.exitPreview} />
       )}
@@ -529,8 +540,7 @@ function PlayerContent() {
                 {currentClasses.map((entry, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-1.5 px-1.5 py-1 rounded ${entry.teacher_name ? "bg-white/10" : "bg-white/[0.03]"
-                      }`}
+                    className={`flex items-center gap-1.5 px-1.5 py-1 rounded ${entry.teacher_name ? "bg-white/10" : "bg-white/[0.03]"}`}
                   >
                     <div className="w-10 h-5 rounded bg-emerald-500/40 text-emerald-200 flex items-center justify-center text-[11px] font-bold shrink-0">
                       {entry.class_name}
@@ -546,13 +556,16 @@ function PlayerContent() {
         </div>
       </div>
 
-      <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.bottomPadding}`}>
-        <TickerBar
-          ticker={combinedTicker}
-          now={now}
-          isAlert={bundle?.announcements.some((a: any) => a.category === "sensitive")}
-          settings={bundle?.settings}
-        />
+      {/* ✅ FIXED TICKER: Resim ne kadar büyük olursa olsun alt bar asla kapanmaz */}
+      <div className="fixed bottom-0 left-0 right-0 z-[80]" style={{ background: BRAND.colors.bg }}>
+        <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.bottomPadding}`}>
+          <TickerBar
+            ticker={combinedTicker}
+            now={now}
+            isAlert={bundle?.announcements.some((a: any) => a.category === "sensitive")}
+            settings={bundle?.settings}
+          />
+        </div>
       </div>
     </div>
   );
