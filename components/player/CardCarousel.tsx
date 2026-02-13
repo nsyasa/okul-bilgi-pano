@@ -93,7 +93,7 @@ function YouTubeEmbed({
         data: { videoId },
         timestamp: Date.now(),
       }),
-    }).catch(() => {});
+    }).catch(() => { });
 
     timeoutRef.current = setTimeout(() => {
       onEnded();
@@ -125,7 +125,7 @@ function YouTubeEmbed({
             data: { videoId },
             timestamp: Date.now(),
           }),
-        }).catch(() => {});
+        }).catch(() => { });
         onError();
       }}
     />
@@ -187,14 +187,13 @@ export function CardCarousel(props: {
         },
         timestamp: Date.now(),
       }),
-    }).catch(() => {});
+    }).catch(() => { });
   }, [card, videoId]);
 
   useEffect(() => {
-    if (displayImages.length <= 1) return;
-    const interval = setInterval(() => setImageIndex((prev) => (prev + 1) % displayImages.length), 3000);
-    return () => clearInterval(interval);
-  }, [displayImages.length]);
+    // Flattened playlist strategy: No internal interval.
+    // Each slide stays for its externally defined duration.
+  }, []);
 
   useEffect(() => {
     setImageIndex(0);
@@ -213,6 +212,7 @@ export function CardCarousel(props: {
   }, []);
 
   const isVideo = card?.kind === "video" && !!videoId;
+  const isImageMode = card?.kind === "announcement" && card.data.display_mode === "image";
 
   if (!card) return null;
 
@@ -251,14 +251,14 @@ export function CardCarousel(props: {
           <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden p-4 pt-2">
             {card.kind === "announcement" ? (
               <>
-                {card.data.body && (
+                {!isImageMode && card.data.body && (
                   <div className="shrink-0 overflow-hidden rounded-lg p-3" style={{ background: BRAND.colors.bg, maxHeight: "30%" }}>
                     <div className="line-clamp-3 whitespace-pre-line text-base leading-snug text-white/90">{card.data.body}</div>
                   </div>
                 )}
 
                 {currentImageSrc ? (
-                  <div className="relative flex-1 overflow-hidden rounded-xl" style={{ background: BRAND.colors.bg, minHeight: "50%" }}>
+                  <div className="relative flex-1 overflow-hidden rounded-xl" style={{ background: BRAND.colors.bg }}>
                     <img
                       key={currentImageSrc}
                       src={currentImageSrc}
@@ -276,7 +276,7 @@ export function CardCarousel(props: {
                             data: { src: safeUrlForLog(currentImageSrc), idx: imageIndex, total: displayImages.length },
                             timestamp: Date.now(),
                           }),
-                        }).catch(() => {});
+                        }).catch(() => { });
                       }}
                       onError={() => {
                         fetch("/api/agent-log", {
@@ -290,7 +290,7 @@ export function CardCarousel(props: {
                             data: { src: safeUrlForLog(currentImageSrc), idx: imageIndex, pageOrigin: window.location.origin },
                             timestamp: Date.now(),
                           }),
-                        }).catch(() => {});
+                        }).catch(() => { });
                         handleImageError(currentImageSrc);
                       }}
                     />
