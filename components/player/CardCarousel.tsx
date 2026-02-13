@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BRAND } from "@/lib/branding";
 import type { Announcement, EventItem, SchoolInfo, YouTubeVideo } from "@/types/player";
+import { loadYouTubeIframeApi, type YTPlayer } from "@/lib/youtubeIframeApi";
 
 function safeUrlForLog(input: string | null | undefined) {
   if (!input) return null;
@@ -68,6 +69,14 @@ export function buildCards(params: {
   return [...v, ...a, ...e, ...a.slice(0, 6), ...i];
 }
 
+/**
+ * GARANTİLİ YOUTUBE:
+ * - ENDED -> anında geç
+ * - duration fallback -> kısa video bitince geç (ENDED kaçarsa)
+ * - maxSeconds -> hard limit
+ * - watchdog -> stall/throttle durumunda zorla geç
+ * - API fail -> fallback iframe
+ */
 function YouTubeEmbed({
   videoId,
   onEnded,
@@ -79,78 +88,188 @@ function YouTubeEmbed({
   onError: () => void;
   maxSeconds: number;
 }) {
-  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
 
-  useEffect(() => {
-    // 1. Log mount
-    fetch("/api/agent-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        runId: "fix-youtube-watchdog",
-        location: "components/player/CardCarousel.tsx:YouTubeEmbed:mount",
-        message: "YouTubeEmbed mounted",
-        data: { videoId, maxSeconds },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => { });
+  const endedOnceRef = useRef(false);
+  const [useFallback, setUseFallback] = useState(false);
 
-    // 2. Normal End Timer (Desired Duration)
-    endTimerRef.current = setTimeout(() => {
-      onEnded();
-    }, maxSeconds * 1000);
+  const maxTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const durationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // 3. Safety Watchdog (Desired + 5s Buffer)
-    // If network is slow or video stalls, this forces a skip.
-    safetyTimerRef.current = setTimeout(() => {
+  const clearTimers = useCallback(() => {
+    if (maxTimerRef.current) clearTimeout(maxTimerRef.current);
+    if (durationTimerRef.current) clearTimeout(durationTimerRef.current);
+    if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
+    maxTimerRef.current = null;
+    durationTimerRef.current = null;
+    watchdogTimerRef.current = null;
+  }, []);
+
+  const endOnce = useCallback(
+    (reason: string, data?: Record<string, unknown>) => {
+      if (endedOnceRef.current) return;
+      endedOnceRef.current = true;
+
+      clearTimers();
+
+      // (Opsiyonel) Debug log: neden geçti?
       fetch("/api/agent-log", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          runId: "fix-youtube-watchdog",
-          location: "components/player/CardCarousel.tsx:YouTubeEmbed:watchdog",
-          message: "YouTube safety watchdog triggered (skip)",
-          data: { videoId },
+          runId: "youtube-guarantee",
+          location: "components/player/CardCarousel.tsx:YouTubeEmbed:endOnce",
+          message: `YouTube endOnce: ${reason}`,
+          data: { videoId, maxSeconds, ...data },
           timestamp: Date.now(),
         }),
       }).catch(() => { });
 
-      onEnded();
-    }, (maxSeconds + 5) * 1000);
+      if (reason.startsWith("error")) onError();
+      else onEnded();
+    },
+    [clearTimers, maxSeconds, onEnded, onError, videoId]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    endedOnceRef.current = false;
+    setUseFallback(false);
+
+    // Hard limit + watchdog (her durumda kalsın)
+    const hard = Math.max(1, maxSeconds);
+    maxTimerRef.current = setTimeout(() => endOnce("maxSeconds"), hard * 1000);
+    watchdogTimerRef.current = setTimeout(() => endOnce("watchdog"), (hard + 8) * 1000);
+
+    const cleanupPlayer = () => {
+      try {
+        playerRef.current?.destroy?.();
+      } catch { }
+      playerRef.current = null;
+    };
+
+    const setupPlayer = async () => {
+      try {
+        await loadYouTubeIframeApi(8000);
+        if (cancelled) return;
+
+        const YT = window.YT;
+        if (!YT?.Player || !containerRef.current) throw new Error("YT.Player missing or container missing");
+
+        // Temizlik
+        containerRef.current.innerHTML = "";
+
+        const player = new YT.Player(containerRef.current, {
+          videoId,
+          width: "100%",
+          height: "100%",
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+            disablekb: 1,
+            fs: 0,
+            modestbranding: 1,
+            rel: 0,
+            playsinline: 1,
+            iv_load_policy: 3,
+            origin: window.location.origin,
+          },
+          events: {
+            onReady: (event) => {
+              if (cancelled) return;
+              try {
+                // autoplay çoğu cihazda mute ister
+                event.target.mute();
+                event.target.playVideo();
+              } catch { }
+
+              // duration fallback: PLAYING’de de tekrar deneyeceğiz
+              // (bazı videolarda duration ilk anda 0 gelir)
+            },
+            onStateChange: (event) => {
+              if (cancelled) return;
+
+              if (event.data === window.YT.PlayerState.ENDED) {
+                endOnce("yt_ended");
+                return;
+              }
+
+              if (event.data === window.YT.PlayerState.PLAYING) {
+                // Kısa video için duration fallback timer (ENDED gelmezse)
+                let tries = 0;
+
+                const pollDuration = () => {
+                  if (cancelled || endedOnceRef.current) return;
+                  tries += 1;
+
+                  let dur = 0;
+                  try {
+                    dur = Number(player.getDuration?.() ?? 0);
+                  } catch {
+                    dur = 0;
+                  }
+
+                  if (Number.isFinite(dur) && dur > 0) {
+                    const effective = Math.min(dur, Math.max(1, maxSeconds));
+                    // Eğer video gerçekten maxSeconds'tan kısa ise, erken geçiş timerı kur
+                    if (effective < Math.max(1, maxSeconds)) {
+                      if (durationTimerRef.current) clearTimeout(durationTimerRef.current);
+                      durationTimerRef.current = setTimeout(
+                        () => endOnce("duration_fallback", { dur }),
+                        Math.max(1, effective) * 1000
+                      );
+                    }
+                    return;
+                  }
+
+                  if (tries < 12) setTimeout(pollDuration, 350);
+                };
+
+                pollDuration();
+              }
+            },
+            onError: (e) => {
+              if (cancelled) return;
+              endOnce("error_yt", { code: e?.data });
+            },
+          },
+        });
+
+        playerRef.current = player as unknown as YTPlayer;
+      } catch {
+        cleanupPlayer();
+        if (!cancelled) setUseFallback(true);
+      }
+    };
+
+    setupPlayer();
 
     return () => {
-      if (endTimerRef.current) clearTimeout(endTimerRef.current);
-      if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
+      cancelled = true;
+      cleanupPlayer();
+      clearTimers();
     };
-  }, [videoId, maxSeconds, onEnded]);
+  }, [videoId, maxSeconds, clearTimers, endOnce]);
 
-  const src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1`;
+  if (useFallback) {
+    const origin = typeof window !== "undefined" ? encodeURIComponent(window.location.origin) : "";
+    const src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1&enablejsapi=1&origin=${origin}`;
 
-  return (
-    <iframe
-      className="absolute inset-0 h-full w-full"
-      src={src}
-      allow="autoplay; encrypted-media; picture-in-picture"
-      allowFullScreen={false}
-      frameBorder="0"
-      onError={() => {
-        // Log error but treat as "ended" to skip
-        fetch("/api/agent-log", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            runId: "fix-youtube-watchdog",
-            location: "components/player/CardCarousel.tsx:YouTubeEmbed:iframe:onError",
-            message: "YouTube iframe error/blocked",
-            data: { videoId },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => { });
-        onError();
-      }}
-    />
-  );
+    return (
+      <iframe
+        className="absolute inset-0 h-full w-full"
+        src={src}
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowFullScreen={false}
+        frameBorder="0"
+        onError={() => endOnce("error_iframe")}
+      />
+    );
+  }
+
+  return <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black/50" />;
 }
 
 export function CardCarousel(props: {
@@ -158,16 +277,20 @@ export function CardCarousel(props: {
   index: number;
   onVideoEnded?: () => void;
   videoMaxSeconds?: number;
+  imageSeconds?: number;
+  showSlideCounter?: boolean;
+  onSlideShowEmptyOrFail?: () => void;
 }) {
-  const { onVideoEnded } = props;
+  const { onVideoEnded, imageSeconds = 3, showSlideCounter = true, onSlideShowEmptyOrFail } = props;
+
   const card = props.cards[props.index % Math.max(1, props.cards.length)];
+
   const [imageIndex, setImageIndex] = useState(0);
   const [failedImageSrcs, setFailedImageSrcs] = useState<string[]>([]);
 
   const videoId = card?.kind === "video" ? extractYouTubeId(card.data.url) : null;
   const videoKey = videoId ? `${videoId}-${props.index}` : null;
 
-  // Derived state BEFORE hooks
   const isVideo = card?.kind === "video" && !!videoId;
   const isImageMode = card?.kind === "announcement" && card.data.display_mode === "image";
 
@@ -192,8 +315,16 @@ export function CardCarousel(props: {
     return announcementImages.filter((src) => !failedImageSrcs.includes(src));
   }, [announcementImages, failedImageSrcs]);
 
+  // Clamp imageIndex if list shrinks (e.g., failures)
+  useEffect(() => {
+    if (!isImageMode) return;
+    if (displayImages.length === 0) return;
+    setImageIndex((prev) => Math.min(prev, Math.max(0, displayImages.length - 1)));
+  }, [isImageMode, displayImages.length]);
+
   const currentImageSrc = displayImages[imageIndex] ?? null;
 
+  // Debug: card selected log (unused helper -> used here)
   useEffect(() => {
     if (!card) return;
 
@@ -202,28 +333,53 @@ export function CardCarousel(props: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        runId: "post-fix-Carousel",
+        runId: "post-fix-Carousel-v2",
         location: "components/player/CardCarousel.tsx",
         message: "card selected",
-        videoId: isVideo ? videoId : undefined
+        data: {
+          kind: card.kind,
+          videoId: isVideo ? videoId : undefined,
+          videoUrl: card.kind === "video" ? safeUrlForLog(card.data.url) : undefined,
+          isImageMode,
+          imageCount: isImageMode ? displayImages.length : undefined,
+        },
       }),
-      signal: controller.signal
+      signal: controller.signal,
     }).catch(() => { });
 
     return () => controller.abort();
-  }, [card, videoId, isVideo]); // Correct dependencies
+  }, [card, videoId, isVideo, isImageMode, displayImages.length]);
 
+  // Reset on card change
   useEffect(() => {
     setImageIndex(0);
     setFailedImageSrcs([]);
   }, [card, props.index]);
 
+  // Slideshow: advance each imageSeconds, stop at last image (no loop)
   useEffect(() => {
-    if (displayImages.length === 0) return;
-    if (imageIndex >= displayImages.length) {
-      setImageIndex(0);
+    if (!isImageMode) return;
+    if (displayImages.length <= 1) return;
+    if (imageIndex >= displayImages.length - 1) return;
+
+    const ms = Math.max(1, imageSeconds) * 1000;
+    const t = setTimeout(() => {
+      setImageIndex((prev) => {
+        const next = prev + 1;
+        return next >= displayImages.length ? prev : next;
+      });
+    }, ms);
+
+    return () => clearTimeout(t);
+  }, [isImageMode, displayImages.length, imageSeconds, imageIndex]);
+
+  // Safety: If image mode but all images failed -> skip
+  useEffect(() => {
+    if (isImageMode && announcementImages.length > 0 && displayImages.length === 0) {
+      const t = setTimeout(() => onSlideShowEmptyOrFail?.(), 1000);
+      return () => clearTimeout(t);
     }
-  }, [displayImages.length, imageIndex]);
+  }, [isImageMode, announcementImages.length, displayImages.length, onSlideShowEmptyOrFail]);
 
   const handleImageError = useCallback((src: string) => {
     setFailedImageSrcs((prev) => (prev.includes(src) ? prev : [...prev, src]));
@@ -236,7 +392,7 @@ export function CardCarousel(props: {
       {isVideo ? (
         <div className="relative flex-1 bg-black">
           <YouTubeEmbed
-            key={videoKey}
+            key={videoKey ?? undefined}
             videoId={videoId!}
             onEnded={handleVideoEnded}
             onError={handleVideoEnded}
@@ -248,7 +404,10 @@ export function CardCarousel(props: {
           <div className="shrink-0 px-6 py-2 pb-3" style={{ borderBottom: `2px solid ${BRAND.colors.brand}` }}>
             <div className="flex items-start justify-between">
               <div className="min-w-0 flex-1">
-                <div className="hidden text-[10px] font-bold uppercase tracking-widest opacity-60" style={{ color: BRAND.colors.brand }}>
+                <div
+                  className="hidden text-[10px] font-bold uppercase tracking-widest opacity-60"
+                  style={{ color: BRAND.colors.brand }}
+                >
                   {card.kind === "announcement" ? "DUYURU" : card.kind === "event" ? "ETKİNLİK" : "OKUL"}
                 </div>
                 <div className="truncate pt-1 text-2xl font-black leading-none text-white">
@@ -279,38 +438,10 @@ export function CardCarousel(props: {
                       src={currentImageSrc}
                       alt="Görsel"
                       className="h-full w-full object-contain"
-                      onLoad={() => {
-                        fetch("/api/agent-log", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            runId: "pre-fix",
-                            hypothesisId: "A",
-                            location: "components/player/CardCarousel.tsx:img:onLoad",
-                            message: "announcement image loaded",
-                            data: { src: safeUrlForLog(currentImageSrc), idx: imageIndex, total: displayImages.length },
-                            timestamp: Date.now(),
-                          }),
-                        }).catch(() => { });
-                      }}
-                      onError={() => {
-                        fetch("/api/agent-log", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            runId: "pre-fix",
-                            hypothesisId: "A",
-                            location: "components/player/CardCarousel.tsx:img:onError",
-                            message: "announcement image failed",
-                            data: { src: safeUrlForLog(currentImageSrc), idx: imageIndex, pageOrigin: window.location.origin },
-                            timestamp: Date.now(),
-                          }),
-                        }).catch(() => { });
-                        handleImageError(currentImageSrc);
-                      }}
+                      onError={() => handleImageError(currentImageSrc)}
                     />
-                    {displayImages.length > 1 && (
-                      <div className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-3 py-1 text-sm font-bold text-white backdrop-blur-sm">
+                    {displayImages.length > 1 && showSlideCounter && (
+                      <div className="absolute bottom-2 right-2 z-10 rounded-lg bg-black/60 px-3 py-1 text-sm font-bold text-white backdrop-blur-sm">
                         {imageIndex + 1} / {displayImages.length}
                       </div>
                     )}

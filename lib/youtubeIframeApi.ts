@@ -11,10 +11,14 @@ interface YTPlayer {
     mute: () => void;
     unMute: () => void;
     getPlayerState: () => number;
+    getDuration: () => number;
+    getCurrentTime: () => number;
 }
 
 interface YTPlayerOptions {
     videoId: string;
+    height?: string | number;
+    width?: string | number;
     host?: string; // Support for host parameter (e.g. www.youtube-nocookie.com)
     playerVars?: Record<string, number | string>;
     events?: {

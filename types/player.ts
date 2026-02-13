@@ -119,6 +119,7 @@ export type PlayerRotationSettings = {
   videoSeconds: number;
   imageSeconds: number;
   textSeconds: number;
+  showSlideCounter?: boolean;
 };
 
 export type PlayerSettings = {
