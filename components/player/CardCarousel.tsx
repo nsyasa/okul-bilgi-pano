@@ -79,28 +79,49 @@ function YouTubeEmbed({
   onError: () => void;
   maxSeconds: number;
 }) {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // 1. Log mount
     fetch("/api/agent-log", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        runId: "pre-fix",
-        hypothesisId: "C",
+        runId: "fix-youtube-watchdog",
         location: "components/player/CardCarousel.tsx:YouTubeEmbed:mount",
-        message: "YouTubeEmbed mounted (iframe mode)",
-        data: { videoId },
+        message: "YouTubeEmbed mounted",
+        data: { videoId, maxSeconds },
         timestamp: Date.now(),
       }),
     }).catch(() => { });
 
-    timeoutRef.current = setTimeout(() => {
+    // 2. Normal End Timer (Desired Duration)
+    endTimerRef.current = setTimeout(() => {
       onEnded();
     }, maxSeconds * 1000);
 
+    // 3. Safety Watchdog (Desired + 5s Buffer)
+    // If network is slow or video stalls, this forces a skip.
+    safetyTimerRef.current = setTimeout(() => {
+      fetch("/api/agent-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          runId: "fix-youtube-watchdog",
+          location: "components/player/CardCarousel.tsx:YouTubeEmbed:watchdog",
+          message: "YouTube safety watchdog triggered (skip)",
+          data: { videoId },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => { });
+
+      onEnded();
+    }, (maxSeconds + 5) * 1000);
+
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (endTimerRef.current) clearTimeout(endTimerRef.current);
+      if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
     };
   }, [videoId, maxSeconds, onEnded]);
 
@@ -114,14 +135,14 @@ function YouTubeEmbed({
       allowFullScreen={false}
       frameBorder="0"
       onError={() => {
+        // Log error but treat as "ended" to skip
         fetch("/api/agent-log", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            runId: "pre-fix",
-            hypothesisId: "C",
+            runId: "fix-youtube-watchdog",
             location: "components/player/CardCarousel.tsx:YouTubeEmbed:iframe:onError",
-            message: "YouTube iframe error",
+            message: "YouTube iframe error/blocked",
             data: { videoId },
             timestamp: Date.now(),
           }),
