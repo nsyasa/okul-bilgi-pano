@@ -1,0 +1,219 @@
+{"timestamp":1771009818573,"id":"log_1771009818573_5fck3r"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"idx":-1,"len":0},"timestamp":1771009818119,"id":"log_1771009818119_xemlcx"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009864094,"id":"log_1771009864094_19crdv"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771009864078,"id":"log_1771009864078_g8qcke"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009867203,"id":"log_1771009867203_c7g3zl"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771009879861,"id":"log_1771009879861_hnih0l"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009879889,"id":"log_1771009879889_t3i2cb"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009888919,"id":"log_1771009888919_trh12t"}
+{"timestamp":1771009901858,"id":"log_1771009901858_yjsu2x"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771009901846,"id":"log_1771009901846_po8vid"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009901864,"id":"log_1771009901864_ofr65d"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009920869,"id":"log_1771009920869_dyavbm"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009951856,"id":"log_1771009951856_j1u6yt"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771009951844,"id":"log_1771009951844_vybv9w"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009958451,"id":"log_1771009958451_y70uxv"}
+{"timestamp":1771009970860,"id":"log_1771009970860_fi7zo1"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009970864,"id":"log_1771009970864_29r9tf"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771009970846,"id":"log_1771009970846_93r5qj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771009980854,"id":"log_1771009980854_bw2dpw"}
+{"timestamp":1771010005876,"id":"log_1771010005876_al84it"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"676fd196-e395-4c96-8406-1a8a89b1a9a3","idx":5,"len":8,"dur":12},"timestamp":1771010005858,"id":"log_1771010005858_fp28fj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010005877,"id":"log_1771010005877_glj43z"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"2919e022-ee19-4978-acfb-f235d5c32205","idx":6,"len":8,"dur":12},"timestamp":1771010018852,"id":"log_1771010018852_l4zio1"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010018866,"id":"log_1771010018866_c7aiv2"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010020163,"id":"log_1771010020163_i0zz40"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"b83203ee-bf0a-4518-8803-4e6a8e941e2b","idx":7,"len":8,"dur":30},"timestamp":1771010032850,"id":"log_1771010032850_wc1fy7"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010032860,"id":"log_1771010032860_deziua"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010040858,"id":"log_1771010040858_bq68a9"}
+{"timestamp":1771010071860,"id":"log_1771010071860_owt7uc"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010071860,"id":"log_1771010071860_sdwipn"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771010071847,"id":"log_1771010071847_olxf1o"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010075947,"id":"log_1771010075947_t48rdm"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771010088842,"id":"log_1771010088842_89s2ip"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010088859,"id":"log_1771010088859_l6foju"}
+{"timestamp":1771010187680,"id":"log_1771010187680_dpivsz"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"idx":-1,"len":0},"timestamp":1771010187647,"id":"log_1771010187647_my97n7"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771010205760,"id":"log_1771010205760_iicj2k"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010205775,"id":"log_1771010205775_embrlp"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010206970,"id":"log_1771010206970_zfpe5q"}
+{"timestamp":1771010218981,"id":"log_1771010218981_4t9smi"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010218981,"id":"log_1771010218981_x40zuy"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771010218967,"id":"log_1771010218967_s80lca"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010220664,"id":"log_1771010220664_2k4k3p"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771010232668,"id":"log_1771010232668_n8xovf"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010232686,"id":"log_1771010232686_xrd1sa"}
+{"timestamp":1771010262689,"id":"log_1771010262689_xe8ea5"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010262694,"id":"log_1771010262694_0fcp9j"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771010262678,"id":"log_1771010262678_u2rlcu"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771010274691,"id":"log_1771010274691_pkmjzr"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010274703,"id":"log_1771010274703_2a47zl"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010280663,"id":"log_1771010280663_kp36rc"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010287975,"id":"log_1771010287975_k0ie4f"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010311986,"id":"log_1771010311986_rwl4k9"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"676fd196-e395-4c96-8406-1a8a89b1a9a3","idx":5,"len":8,"dur":12},"timestamp":1771010311974,"id":"log_1771010311974_xem2oj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010320445,"id":"log_1771010320445_hdkvov"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"2919e022-ee19-4978-acfb-f235d5c32205","idx":6,"len":8,"dur":12},"timestamp":1771010332450,"id":"log_1771010332450_l8fo9z"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010332465,"id":"log_1771010332465_s4h0o2"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010340691,"id":"log_1771010340691_pszhi6"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010352742,"id":"log_1771010352742_rf5zpi"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"b83203ee-bf0a-4518-8803-4e6a8e941e2b","idx":7,"len":8,"dur":30},"timestamp":1771010352677,"id":"log_1771010352677_w28nax"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010371051,"id":"log_1771010371051_2ganav"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010400745,"id":"log_1771010400745_llpcbr"}
+{"timestamp":1771010414320,"id":"log_1771010414320_sxregd"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"idx":-1,"len":0},"timestamp":1771010414272,"id":"log_1771010414272_ha46ln"}
+{"timestamp":1771010430931,"id":"log_1771010430931_4ylw6x"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771010430864,"id":"log_1771010430864_xqro05"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010430960,"id":"log_1771010430960_te7pg0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010431475,"id":"log_1771010431475_ozwhxb"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010443901,"id":"log_1771010443901_8ohlna"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771010443861,"id":"log_1771010443861_do9vyg"}
+{"timestamp":1771010455925,"id":"log_1771010455925_znbnli"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771010455867,"id":"log_1771010455867_wyds27"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010455926,"id":"log_1771010455926_yw8soa"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010460687,"id":"log_1771010460687_qija7i"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771010490847,"id":"log_1771010490847_qfgkry"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010490877,"id":"log_1771010490877_gx1nyj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010491336,"id":"log_1771010491336_vnpyl8"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771010503332,"id":"log_1771010503332_bm43xf"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010503384,"id":"log_1771010503384_z4yu3i"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010520691,"id":"log_1771010520691_eyp6s7"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"676fd196-e395-4c96-8406-1a8a89b1a9a3","idx":5,"len":8,"dur":12},"timestamp":1771010544672,"id":"log_1771010544672_cs82tl"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010544722,"id":"log_1771010544722_azzter"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010551038,"id":"log_1771010551038_3b1ht4"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"b83203ee-bf0a-4518-8803-4e6a8e941e2b","idx":6,"len":8,"dur":30},"timestamp":1771010563858,"id":"log_1771010563858_hdbmqq"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010563893,"id":"log_1771010563893_4dml9t"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010563894,"id":"log_1771010563894_jw1juc"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010580879,"id":"log_1771010580879_2lkvyt"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010611226,"id":"log_1771010611226_44kthd"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"2919e022-ee19-4978-acfb-f235d5c32205","idx":7,"len":8,"dur":12},"timestamp":1771010641852,"id":"log_1771010641852_ip4m1f"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010641903,"id":"log_1771010641903_xmo7d7"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771010654847,"id":"log_1771010654847_rxu5sp"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010654876,"id":"log_1771010654876_wygiu0"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771010667873,"id":"log_1771010667873_n0rx5n"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010667907,"id":"log_1771010667907_hxufoy"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771010680856,"id":"log_1771010680856_n0ijyp"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010680893,"id":"log_1771010680893_0wddhl"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010697869,"id":"log_1771010697869_wqkdsx"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010701671,"id":"log_1771010701671_7hfvmd"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771010731861,"id":"log_1771010731861_8nf7m5"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010731888,"id":"log_1771010731888_18327g"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771010744858,"id":"log_1771010744858_x4sdpf"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010744904,"id":"log_1771010744904_e6gman"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010757892,"id":"log_1771010757892_n80uh0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010761199,"id":"log_1771010761199_fbe5x7"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010785903,"id":"log_1771010785903_vtwepy"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"676fd196-e395-4c96-8406-1a8a89b1a9a3","idx":5,"len":8,"dur":12},"timestamp":1771010785854,"id":"log_1771010785854_6pld4g"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010798897,"id":"log_1771010798897_9oum14"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"b83203ee-bf0a-4518-8803-4e6a8e941e2b","idx":6,"len":8,"dur":30},"timestamp":1771010798857,"id":"log_1771010798857_majn5b"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010798915,"id":"log_1771010798915_hltzme"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010817884,"id":"log_1771010817884_hmtw9u"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","videoId":"9UmkF77bQjs","timestamp":1771010821933,"id":"log_1771010821933_8gs65m"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"2919e022-ee19-4978-acfb-f235d5c32205","idx":7,"len":8,"dur":12},"timestamp":1771010852851,"id":"log_1771010852851_a39fsn"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010852885,"id":"log_1771010852885_nmchdk"}
+{"timestamp":1771010865936,"id":"log_1771010865936_owbptf"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010865950,"id":"log_1771010865950_v3kj9m"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771010865864,"id":"log_1771010865864_q28gm0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010877894,"id":"log_1771010877894_f5ctkp"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010881412,"id":"log_1771010881412_wi4muo"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010893908,"id":"log_1771010893908_ienl16"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771010893848,"id":"log_1771010893848_oobonb"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771010906862,"id":"log_1771010906862_srvnr0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010906893,"id":"log_1771010906893_gacrax"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010937895,"id":"log_1771010937895_e1fidh"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010941407,"id":"log_1771010941407_ppua23"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010966736,"id":"log_1771010966736_avov9i"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771010970997,"id":"log_1771010970997_g48b1o"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","timestamp":1771011000911,"id":"log_1771011000911_2fddy7"}
+{"timestamp":1771011006122,"id":"log_1771011006122_j1bns9"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011006124,"id":"log_1771011006124_xgp493"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011017588,"id":"log_1771011017588_zq9i6l"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011031608,"id":"log_1771011031608_kascj2"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771011061857,"id":"log_1771011061857_cy14um"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011061904,"id":"log_1771011061904_12asjj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011074895,"id":"log_1771011074895_fe6tpt"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771011074855,"id":"log_1771011074855_kttu1m"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"676fd196-e395-4c96-8406-1a8a89b1a9a3","idx":5,"len":8,"dur":12},"timestamp":1771011099853,"id":"log_1771011099853_6ed3p1"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011099905,"id":"log_1771011099905_dnls5u"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"video","videoId":"9UmkF77bQjs","videoUrl":"https://youtu.be/9UmkF77bQjs","isImageMode":false},"timestamp":1771011112905,"id":"log_1771011112905_vuy5go"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"b83203ee-bf0a-4518-8803-4e6a8e941e2b","idx":6,"len":8,"dur":30},"timestamp":1771011112863,"id":"log_1771011112863_fqozqk"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"video","videoId":"9UmkF77bQjs","videoUrl":"https://youtu.be/9UmkF77bQjs","isImageMode":false},"timestamp":1771011112906,"id":"log_1771011112906_wowgsf"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"video","videoId":"9UmkF77bQjs","videoUrl":"https://youtu.be/9UmkF77bQjs","isImageMode":false},"timestamp":1771011117867,"id":"log_1771011117867_63jtnp"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"video","videoId":"9UmkF77bQjs","videoUrl":"https://youtu.be/9UmkF77bQjs","isImageMode":false},"timestamp":1771011126441,"id":"log_1771011126441_950ju0"}
+{"runId":"youtube-guarantee","location":"components/player/CardCarousel.tsx:YouTubeEmbed:endOnce","message":"YouTube endOnce: maxSeconds","data":{"videoId":"9UmkF77bQjs","maxSeconds":30},"timestamp":1771011156849,"id":"log_1771011156849_tyhttd"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"2919e022-ee19-4978-acfb-f235d5c32205","idx":7,"len":8,"dur":12},"timestamp":1771011156867,"id":"log_1771011156867_c2lwmo"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011156922,"id":"log_1771011156922_yxyrwc"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011169902,"id":"log_1771011169902_ba67wu"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771011169860,"id":"log_1771011169860_bziz68"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011177867,"id":"log_1771011177867_bontcy"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771011190853,"id":"log_1771011190853_72iz39"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011190905,"id":"log_1771011190905_5wotcp"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771011203852,"id":"log_1771011203852_ux9ifx"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011203881,"id":"log_1771011203881_wmcuss"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011229839,"id":"log_1771011229839_kbfvvj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011237914,"id":"log_1771011237914_26nq9s"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011241423,"id":"log_1771011241423_z8m9gd"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771011271847,"id":"log_1771011271847_cq25p2"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011271879,"id":"log_1771011271879_d71gz8"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771011284848,"id":"log_1771011284848_tfttjr"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011284901,"id":"log_1771011284901_ya66q1"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011297869,"id":"log_1771011297869_ej0ld1"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011301460,"id":"log_1771011301460_rair8v"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011325450,"id":"log_1771011325450_v79ti2"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771011325389,"id":"log_1771011325389_kyrh2z"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011326316,"id":"log_1771011326316_zkrl2m"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771011338854,"id":"log_1771011338854_zccgje"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011338893,"id":"log_1771011338893_j0hr8r"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771011351850,"id":"log_1771011351850_i1nz15"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011351932,"id":"log_1771011351932_w4x832"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011361370,"id":"log_1771011361370_lxy6aa"}
+{"timestamp":1771011368895,"id":"log_1771011368895_r9jc0a"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771011368822,"id":"log_1771011368822_matjz0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011368896,"id":"log_1771011368896_x78knj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011369534,"id":"log_1771011369534_2px50c"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011381577,"id":"log_1771011381577_cazx2o"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771011381541,"id":"log_1771011381541_re67f5"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771011393554,"id":"log_1771011393554_vry110"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011393595,"id":"log_1771011393595_xj13b6"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011420188,"id":"log_1771011420188_r891f6"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011429011,"id":"log_1771011429011_gfzveq"}
+{"timestamp":1771011459059,"id":"log_1771011459059_zsdjbb"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011459059,"id":"log_1771011459059_tj04r0"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771011459015,"id":"log_1771011459015_jrn88i"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771011471023,"id":"log_1771011471023_qpp7v5"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011471067,"id":"log_1771011471067_ymehu3"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011480887,"id":"log_1771011480887_iydc00"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011489629,"id":"log_1771011489629_elmkzw"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"676fd196-e395-4c96-8406-1a8a89b1a9a3","idx":5,"len":8,"dur":12},"timestamp":1771011513857,"id":"log_1771011513857_risri7"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011513933,"id":"log_1771011513933_6g3hkj"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"b83203ee-bf0a-4518-8803-4e6a8e941e2b","idx":6,"len":8,"dur":30},"timestamp":1771011526853,"id":"log_1771011526853_vzfib4"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"video","videoId":"9UmkF77bQjs","videoUrl":"https://youtu.be/9UmkF77bQjs","isImageMode":false},"timestamp":1771011526910,"id":"log_1771011526910_wmurx9"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"video","videoId":"9UmkF77bQjs","videoUrl":"https://youtu.be/9UmkF77bQjs","isImageMode":false},"timestamp":1771011549239,"id":"log_1771011549239_8h53h6"}
+{"runId":"youtube-guarantee","location":"components/player/CardCarousel.tsx:YouTubeEmbed:endOnce","message":"YouTube endOnce: maxSeconds","data":{"videoId":"9UmkF77bQjs","maxSeconds":30},"timestamp":1771011579841,"id":"log_1771011579841_0ue6zx"}
+{"timestamp":1771011579897,"id":"log_1771011579897_tchthp"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"2919e022-ee19-4978-acfb-f235d5c32205","idx":7,"len":8,"dur":12},"timestamp":1771011579859,"id":"log_1771011579859_1ztv5x"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011579912,"id":"log_1771011579912_8f1d4z"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011592878,"id":"log_1771011592878_kcfbxq"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"5cc25786-cc91-4cfb-818e-c33b481ff0bf","idx":0,"len":8,"dur":12},"timestamp":1771011592851,"id":"log_1771011592851_j9di5j"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011597879,"id":"log_1771011597879_z2cme0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011609454,"id":"log_1771011609454_2dzfrf"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"4e7974b1-52df-4d30-a138-8382698d1304","idx":1,"len":8,"dur":12},"timestamp":1771011621851,"id":"log_1771011621851_jkcin4"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011621887,"id":"log_1771011621887_g1xqyx"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011634887,"id":"log_1771011634887_rskkhi"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"f08efbec-7939-4fa0-a995-4f4c6e375715","idx":2,"len":8,"dur":30},"timestamp":1771011634854,"id":"log_1771011634854_63mdla"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011657876,"id":"log_1771011657876_ikhzuj"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011669406,"id":"log_1771011669406_osism3"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011699895,"id":"log_1771011699895_eywbzv"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"efd16185-d7d3-48f7-9470-558e1b19ce52","idx":3,"len":8,"dur":12},"timestamp":1771011699852,"id":"log_1771011699852_4tdt17"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011712896,"id":"log_1771011712896_lo0vci"}
+{"runId":"post-fix-Timer","location":"app/player/page.tsx","message":"playlist item changed","data":{"id":"30e6628b-946d-4893-b2fd-6604b267be9f","idx":4,"len":8,"dur":24},"timestamp":1771011712857,"id":"log_1771011712857_8i94yo"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011717885,"id":"log_1771011717885_xvz4gw"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011729552,"id":"log_1771011729552_sq7vqi"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011742893,"id":"log_1771011742893_yar33c"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011745496,"id":"log_1771011745496_p0kr5v"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011757882,"id":"log_1771011757882_p3ry2a"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":10},"timestamp":1771011770900,"id":"log_1771011770900_tkyy27"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011801921,"id":"log_1771011801921_x893b0"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":false},"timestamp":1771011804076,"id":"log_1771011804076_kwiki9"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011816886,"id":"log_1771011816886_28xxt4"}
+{"runId":"post-fix-Carousel-v2","location":"components/player/CardCarousel.tsx","message":"card selected","data":{"kind":"announcement","isImageMode":true,"imageCount":8},"timestamp":1771011823661,"id":"log_1771011823661_pvs4fs"}
