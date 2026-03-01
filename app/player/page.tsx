@@ -380,35 +380,53 @@ function PlayerContent() {
   }, [bundle, nowTR]);
 
   // Class list
-  const ALL_CLASSES = [
+  const ALL_CLASSES = useMemo(() => [
     "5-A", "5-B", "6-A", "6-B", "7-A", "7-B", "8-A", "8-B",
     "9-A", "9-B", "9-C", "9-D",
     "10-A", "10-B", "10-C", "10-D",
     "11-A", "11-B", "11-C", "11-D",
     "12-A", "12-B", "12-C", "12-D", "12-E",
-  ];
+  ], []);
 
-  const currentClasses = useMemo(() => {
-    const lessonNum = statusData.currentLessonNumber;
-    const weekday = nowTR.getDay();
+  const scheduleIndex = useMemo(() => {
     const schedule = bundle?.lessonSchedule ?? [];
+    const index = new Map<string, Map<string, string>>();
 
     const normalize = (name: string) => {
       const match = name.match(/^(\d+)-?([A-Za-z])$/);
       return match ? `${match[1]}-${match[2].toUpperCase()}` : name;
     };
 
-    const teacherMap = new Map<string, string>();
-    if (lessonNum && weekday >= 1 && weekday <= 5) {
-      for (const entry of schedule as any[]) {
-        if (entry.day_of_week === weekday && entry.lesson_number === lessonNum && entry.class_name) {
-          teacherMap.set(normalize(entry.class_name), entry.teacher_name);
+    for (const entry of schedule as any[]) {
+      if (entry.day_of_week && entry.lesson_number && entry.class_name) {
+        const key = `${entry.day_of_week}-${entry.lesson_number}`;
+        let classMap = index.get(key);
+        if (!classMap) {
+          classMap = new Map<string, string>();
+          index.set(key, classMap);
         }
+        classMap.set(normalize(entry.class_name), entry.teacher_name);
       }
     }
 
-    return ALL_CLASSES.map((className) => ({ class_name: className, teacher_name: teacherMap.get(className) || "" }));
-  }, [statusData.currentLessonNumber, nowTR, bundle?.lessonSchedule]);
+    return index;
+  }, [bundle?.lessonSchedule]);
+
+  const currentClasses = useMemo(() => {
+    const lessonNum = statusData.currentLessonNumber;
+    const weekday = nowTR.getDay();
+
+    let teacherMap: Map<string, string> | undefined;
+    if (lessonNum && weekday >= 1 && weekday <= 5) {
+      const key = `${weekday}-${lessonNum}`;
+      teacherMap = scheduleIndex.get(key);
+    }
+
+    return ALL_CLASSES.map((className) => ({
+      class_name: className,
+      teacher_name: teacherMap?.get(className) || "",
+    }));
+  }, [statusData.currentLessonNumber, nowTR, scheduleIndex, ALL_CLASSES]);
 
   // Cards for CardCarousel (single item display)
   const currentCardList = useMemo(() => {
