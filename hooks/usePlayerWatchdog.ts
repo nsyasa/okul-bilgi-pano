@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-const DEBUG = false;
-
 export function usePlayerWatchdog(
     lastSuccessfulFetchAt: number,
     consecutiveFetchFailures: number
@@ -34,7 +32,6 @@ export function usePlayerWatchdog(
             const dailyCount = dailyCountStr ? parseInt(dailyCountStr, 10) : 0;
 
             if (dailyCount >= DAILY_RELOAD_LIMIT) {
-                if (DEBUG) console.log(`🚫 Günlük reload limiti aşıldı (${dailyCount}/${DAILY_RELOAD_LIMIT})`);
                 setDailyLimitReached(true);
                 setShowConnectionOverlay(true);
                 return false;
@@ -45,7 +42,6 @@ export function usePlayerWatchdog(
             const lastReloadAt = lastReloadStr ? parseInt(lastReloadStr, 10) : 0;
 
             if (now - lastReloadAt < 2 * 60 * 1000) {
-                if (DEBUG) console.log("🔒 Reload loop koruması: 2 dk içinde tekrar reload yapılmaz");
                 setShowConnectionOverlay(true);
                 return false;
             }
@@ -53,7 +49,6 @@ export function usePlayerWatchdog(
             // Sayaçları güncelle ve reload yap
             localStorage.setItem(dailyCountKey, String(dailyCount + 1));
             sessionStorage.setItem("player_last_reload_at", String(now));
-            if (DEBUG) console.log(`🔄 Safe reload başlatılıyor... (${dailyCount + 1}/${DAILY_RELOAD_LIMIT})`);
             window.location.reload();
             return true;
         } catch {
@@ -75,8 +70,6 @@ export function usePlayerWatchdog(
             jsErrorTimestampsRef.current = jsErrorTimestampsRef.current.filter(t => t > tenMinutesAgo);
             jsErrorTimestampsRef.current.push(now);
             jsErrorCountRef.current = jsErrorTimestampsRef.current.length;
-
-            if (DEBUG) console.log(`🔴 JS Error count (10 dk): ${jsErrorCountRef.current}`);
         };
 
         const onError = () => handleError();
@@ -105,7 +98,6 @@ export function usePlayerWatchdog(
 
                 // 1. Veri 5 dakikadan eski mi?
                 if (timeSinceLastFetch > STALE_THRESHOLD) {
-                    if (DEBUG) console.log(`⚠️ Watchdog: Veri ${Math.round(timeSinceLastFetch / 1000)}s eski`);
                     setShowConnectionOverlay(true);
                     safeReload();
                     return;
@@ -113,7 +105,6 @@ export function usePlayerWatchdog(
 
                 // 2. Ardışık fetch hatası >= 5 mi?
                 if (consecutiveFetchFailures >= MAX_FAILURES) {
-                    if (DEBUG) console.log(`⚠️ Watchdog: ${consecutiveFetchFailures} ardışık fetch hatası`);
                     setShowConnectionOverlay(true);
                     safeReload();
                     return;
@@ -121,7 +112,6 @@ export function usePlayerWatchdog(
 
                 // 3. Son 10 dk'da >= 3 JS hatası mı?
                 if (jsErrorCountRef.current >= MAX_JS_ERRORS) {
-                    if (DEBUG) console.log(`⚠️ Watchdog: ${jsErrorCountRef.current} JS hatası (10 dk)`);
                     safeReload();
                     return;
                 }
@@ -131,8 +121,8 @@ export function usePlayerWatchdog(
                 // Burada state update yaparsak dependency loop riski var mı? lastSuccessfulFetchAt ve consecutiveFetchFailures değişince effect yeniden çalışır.
                 // showConnectionOverlay state'i dependency'de olmalı.
 
-            } catch (err) {
-                if (DEBUG) console.log(`🔴 Watchdog error: ${err}`);
+            } catch {
+                // Watchdog çalışırken oluşabilecek hataları yut
             }
         }, WATCHDOG_INTERVAL);
 
