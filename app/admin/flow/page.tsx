@@ -216,19 +216,31 @@ function FlowInner({ profile }: { profile: any }) {
 
         try {
             // Build DB updates for all items whose flow_order changed
-            const updates: Promise<any>[] = [];
+            const announcementsToUpdate: { id: string; flow_order: number }[] = [];
+            const videosToUpdate: { id: string; flow_order: number }[] = [];
+
             for (const ri of reordered) {
                 const orig = listContext.find(x => x.id === ri.id);
                 if (!orig || orig.flow_order === ri.flow_order) continue;
 
                 if (ri.kind === 'announcement') {
-                    updates.push(Promise.resolve(sb.from("announcements").update({ flow_order: ri.flow_order }).eq("id", ri.id)));
+                    announcementsToUpdate.push({ id: ri.id, flow_order: ri.flow_order });
                 } else {
-                    updates.push(Promise.resolve(sb.from("youtube_videos").update({ flow_order: ri.flow_order }).eq("id", ri.id)));
+                    videosToUpdate.push({ id: ri.id, flow_order: ri.flow_order });
                 }
             }
 
-            await Promise.all(updates);
+            const updates: Promise<any>[] = [];
+            if (announcementsToUpdate.length > 0) {
+                updates.push(Promise.resolve(sb.from("announcements").upsert(announcementsToUpdate).throwOnError()));
+            }
+            if (videosToUpdate.length > 0) {
+                updates.push(Promise.resolve(sb.from("youtube_videos").upsert(videosToUpdate).throwOnError()));
+            }
+
+            if (updates.length > 0) {
+                await Promise.all(updates);
+            }
             toast.success("Sıralama güncellendi");
         } catch (e) {
             toast.error("Sıralama hatası – geri alınıyor");
