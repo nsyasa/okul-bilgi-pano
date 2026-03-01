@@ -423,17 +423,27 @@ function LessonScheduleInner({ profile }: { profile: any }) {
         const loadingToast = toast.loading("Kaydediliyor...");
 
         try {
-            // Batch update
-            const updates = Array.from(editedEntries.entries());
-            for (const [id, class_name] of updates) {
+            // Batch update via upsert
+            const updates = Array.from(editedEntries.entries()).map(([id, class_name]) => ({
+                id,
+                class_name
+            }));
+
+            // Splitting into batches of 200 (similar to handleImport) just in case
+            const batchSize = 200;
+            let updatedTotal = 0;
+
+            for (let i = 0; i < updates.length; i += batchSize) {
+                const batch = updates.slice(i, i + batchSize);
                 const { error } = await sb
                     .from("lesson_schedule")
-                    .update({ class_name })
-                    .eq("id", id);
+                    .upsert(batch);
+
                 if (error) throw error;
+                updatedTotal += batch.length;
             }
 
-            toast.success(`✅ ${updates.length} kayıt güncellendi`, { id: loadingToast });
+            toast.success(`✅ ${updatedTotal} kayıt güncellendi`, { id: loadingToast });
             setEditedEntries(new Map());
             setEditMode(false);
             await load();
