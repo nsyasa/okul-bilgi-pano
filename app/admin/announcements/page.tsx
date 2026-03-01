@@ -69,14 +69,14 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     setLoading(true);
     const { data, error } = await sb.from("announcements").select("*").order("priority", { ascending: false }).limit(200);
     setLoading(false);
-    if (!error) setItems((data ?? []) as any);
+    if (!error) setItems((data ?? []) as Announcement[]);
   };
 
   const loadVideos = async () => {
     setVideoLoading(true);
     const { data, error } = await sb.from("youtube_videos").select("*").order("priority", { ascending: false }).limit(200);
     setVideoLoading(false);
-    if (!error) setVideos((data ?? []) as any);
+    if (!error) setVideos((data ?? []) as YouTubeVideo[]);
   };
 
 
@@ -170,7 +170,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   const save = async (formData: AnnouncementFormState) => {
     setBusy(true);
     try {
-      const payload: any = {
+      const payload: Partial<Announcement> = {
         title: (formData.title ?? "").trim(),
         body: formData.body ?? null,
         image_url: formData.image_url ?? null,
@@ -200,8 +200,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       setEditing(null);
       await load();
       toast.success("Başarıyla kaydedildi.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Bir hata oluştu.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Bir hata oluştu.");
     } finally {
       setBusy(false);
     }
@@ -244,7 +244,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
   };
 
   const toggleAnnouncementActive = async (a: Announcement, next: boolean) => {
-    const payload: any = next ? { status: "published" } : { status: "draft" };
+    const payload: Partial<Announcement> = next ? { status: "published" } : { status: "draft" };
     if (next && a.category === "sensitive") {
       payload.status = "pending_review";
       payload.approved_label = false;
@@ -284,7 +284,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     if (!editingVideo) return;
     setVideoBusy(true);
     try {
-      const payload: any = {
+      const payload: Partial<YouTubeVideo> = {
         title: (editingVideo.title ?? "").trim() || null,
         url: (editingVideo.url ?? "").trim(),
         is_active: !!editingVideo.is_active,
@@ -309,8 +309,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       setEditingVideo(null);
       await loadVideos();
       toast.success("Video kaydedildi.");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Hata oluştu.");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Hata oluştu.");
     } finally {
       setVideoBusy(false);
     }
@@ -327,10 +327,16 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
     }
   };
 
+  type ContentCardProps =
+    | { item: Announcement; type: "announcement"; isActive: boolean }
+    | { item: YouTubeVideo; type: "video"; isActive: boolean };
+
   // İçerik Kartı Bileşeni - Daha Kompakt
-  const ContentCard = ({ item, type, isActive }: { item: any; type: "announcement" | "video"; isActive: boolean }) => {
+  const ContentCard = ({ item, type, isActive }: ContentCardProps) => {
     const isAnnouncement = type === "announcement";
-    const hasImage = isAnnouncement && (item.image_url || item.image_urls?.[0]);
+    const announcementItem = isAnnouncement ? (item as Announcement) : null;
+    const videoItem = !isAnnouncement ? (item as YouTubeVideo) : null;
+    const hasImage = isAnnouncement && announcementItem && (announcementItem.image_url || announcementItem.image_urls?.[0]);
 
     return (
       <div className={`group relative rounded-xl overflow-hidden transition-all duration-200 ${isActive
@@ -339,8 +345,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         }`}>
         {/* Görsel veya Video İkonu */}
         <div className="relative h-28 bg-black/20 overflow-hidden">
-          {isAnnouncement && hasImage ? (
-            <img src={item.image_url || item.image_urls[0]} alt="" className="w-full h-full object-cover" />
+          {isAnnouncement && announcementItem && hasImage ? (
+            <img src={announcementItem.image_url || announcementItem.image_urls?.[0]} alt="" className="w-full h-full object-cover" />
           ) : isAnnouncement ? (
             <div className="w-full h-full flex items-center justify-center text-white/10">
               <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,9 +368,9 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
           </div>
 
           {/* Resim Sayısı */}
-          {isAnnouncement && item.image_urls?.length > 1 && (
+          {isAnnouncement && announcementItem && (announcementItem.image_urls?.length ?? 0) > 1 && (
             <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 rounded-md text-[10px] text-white font-mono">
-              {item.image_urls.length} resim
+              {announcementItem.image_urls!.length} resim
             </div>
           )}
         </div>
@@ -375,21 +381,21 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
             {item.title || (isAnnouncement ? "Başlıksız Duyuru" : "YouTube Video")}
           </h3>
 
-          {isAnnouncement && item.body && (
-            <p className="text-white/40 text-xs line-clamp-2 mb-2">{item.body}</p>
+          {isAnnouncement && announcementItem?.body && (
+            <p className="text-white/40 text-xs line-clamp-2 mb-2">{announcementItem.body}</p>
           )}
 
-          {!isAnnouncement && item.url && (
-            <p className="text-white/30 text-[10px] font-mono truncate mb-2">{item.url}</p>
+          {!isAnnouncement && videoItem?.url && (
+            <p className="text-white/30 text-[10px] font-mono truncate mb-2">{videoItem.url}</p>
           )}
 
           {/* Alt Bilgiler */}
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-white/30 font-mono">#{item.priority}</span>
-              {isAnnouncement && item.category && (
+              {isAnnouncement && announcementItem?.category && (
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/50">
-                  {item.category === 'general' ? 'Genel' : item.category === 'event' ? 'Etkinlik' : item.category}
+                  {announcementItem.category === 'general' ? 'Genel' : announcementItem.category === 'event' ? 'Etkinlik' : announcementItem.category}
                 </span>
               )}
             </div>
@@ -398,7 +404,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               {/* Toggle Yayın */}
               <button
-                onClick={() => isAnnouncement ? toggleAnnouncementActive(item, !isActive) : toggleVideoActive(item, !isActive)}
+                onClick={() => isAnnouncement && announcementItem ? toggleAnnouncementActive(announcementItem, !isActive) : videoItem && toggleVideoActive(videoItem, !isActive)}
                 className={`p-1.5 rounded-lg transition-colors ${isActive
                   ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/40"
                   : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40"
@@ -410,7 +416,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
               {/* Düzenle */}
               <button
-                onClick={() => isAnnouncement ? setEditing(item) : setEditingVideo(item)}
+                onClick={() => isAnnouncement && announcementItem ? setEditing(announcementItem) : videoItem && setEditingVideo(videoItem)}
                 className="p-1.5 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
                 title="Düzenle"
               >
@@ -419,7 +425,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
               {/* Sil */}
               <button
-                onClick={() => isAnnouncement ? del(item.id) : delVideo(item.id)}
+                onClick={() => isAnnouncement && announcementItem ? del(announcementItem.id) : videoItem && delVideo(videoItem.id)}
                 className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
                 title="Sil"
               >
@@ -472,7 +478,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
         ].map((t) => (
           <button
             key={t.key}
-            onClick={() => setTab(t.key as any)}
+            onClick={() => setTab(t.key as "videos" | "big" | "image")}
             className={`px-4 py-2.5 rounded-xl font-semibold text-sm transition-all flex items-center gap-2 ${tab === t.key
               ? "bg-brand text-white shadow-lg shadow-brand/30"
               : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white"
@@ -510,7 +516,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
               {activeVideos.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {activeVideos.map((v: any) => (
+                  {activeVideos.map((v: YouTubeVideo) => (
                     <ContentCard key={v.id} item={v} type="video" isActive={true} />
                   ))}
                 </div>
@@ -537,7 +543,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
               {showPassive && passiveVideos.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {passiveVideos.map((v: any) => (
+                  {passiveVideos.map((v: YouTubeVideo) => (
                     <ContentCard key={v.id} item={v} type="video" isActive={false} />
                   ))}
                 </div>
@@ -571,7 +577,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
               {activeAnnouncements.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {activeAnnouncements.map((a: any) => (
+                  {activeAnnouncements.map((a: Announcement) => (
                     <ContentCard key={a.id} item={a} type="announcement" isActive={true} />
                   ))}
                 </div>
@@ -598,7 +604,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
 
               {showPassive && passiveAnnouncements.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {passiveAnnouncements.map((a: any) => (
+                  {passiveAnnouncements.map((a: Announcement) => (
                     <ContentCard key={a.id} item={a} type="announcement" isActive={false} />
                   ))}
                 </div>
