@@ -1,0 +1,15 @@
+
+> okul-pano-player@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1838ms
+ ○ Compiling /admin/lesson-schedule ...
+ ✓ Compiled /admin/lesson-schedule in 8.4s (609 modules)
+ GET /admin/lesson-schedule 200 in 9165ms
+ GET /admin/lesson-schedule 200 in 46ms
+ ✓ Compiled in 3.9s (609 modules)
+ GET /admin/lesson-schedule 200 in 217ms
