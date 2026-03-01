@@ -60,8 +60,8 @@ function DutiesInner({ profile }: { profile: any }) {
         });
       });
       setTemplate(fullTemplate);
-    } catch (err: any) {
-      toast.error("Yükleme hatası: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Yükleme hatası: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -113,8 +113,8 @@ function DutiesInner({ profile }: { profile: any }) {
       toast.success(`✅ ${toInsert.length} nöbetçi kaydedildi`, { id: loadingToast });
       setEditMode(false);
       await loadTemplate();
-    } catch (err: any) {
-      toast.error("Kaydetme hatası: " + err.message, { id: loadingToast });
+    } catch (err: unknown) {
+      toast.error("Kaydetme hatası: " + (err instanceof Error ? err.message : String(err)), { id: loadingToast });
     } finally {
       setSaving(false);
     }
@@ -174,8 +174,8 @@ function DutiesInner({ profile }: { profile: any }) {
       setTemplate(newTemplate);
       setEditMode(true);
       toast.success("✅ Excel yüklendi. Kaydet'e tıklayın.", { id: loadingToast });
-    } catch (err: any) {
-      toast.error("Excel okuma hatası: " + err.message, { id: loadingToast });
+    } catch (err: unknown) {
+      toast.error("Excel okuma hatası: " + (err instanceof Error ? err.message : String(err)), { id: loadingToast });
     }
 
     // Input'u sıfırla

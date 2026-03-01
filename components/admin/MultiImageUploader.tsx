@@ -70,8 +70,8 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
       const newUrls = urls.includes(publicUrl) ? urls : [...urls, publicUrl];
       onChange(newUrls);
       setMsg("✅ Görsel yüklendi!");
-    } catch (err: any) {
-      setMsg(`Hata: ${err?.message ?? "Yükleme başarısız"}`);
+    } catch (err: unknown) {
+      setMsg(`Hata: ${err instanceof Error ? err.message : "Yükleme başarısız"}`);
     } finally {
       setUploading(false);
     }
