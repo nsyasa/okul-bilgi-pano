@@ -3,7 +3,7 @@ import { supabaseBrowser } from "./supabaseBrowser";
 export async function uploadAnnouncementImage(file: File) {
   const sb = supabaseBrowser();
   const ext = file.name.split(".").pop() || "png";
-  const path = `announcements/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+  const path = `announcements/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
   const { error: upErr } = await sb.storage.from("pano-media").upload(path, file, {
     cacheControl: "3600",

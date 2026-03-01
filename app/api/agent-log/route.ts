@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     const entry: any = { ...body };
     if (!entry.timestamp) entry.timestamp = Date.now();
-    if (!entry.id) entry.id = `log_${entry.timestamp}_${Math.random().toString(36).slice(2, 8)}`;
+    if (!entry.id) entry.id = `log_${entry.timestamp}_${crypto.randomUUID()}`;
 
     const line = JSON.stringify(entry) + "\n";
     await fs.appendFile(logPath, line, "utf8").catch(err => console.error("Log write failed", err));
