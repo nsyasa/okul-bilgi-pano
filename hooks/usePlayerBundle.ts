@@ -73,7 +73,6 @@ export function usePlayerBundle() {
         } catch (err: any) {
             setConsecutiveFetchFailures((prev) => prev + 1);
             setLastError(err.message || String(err));
-            // console.log(`🔴 Fetch failed: ${err}`);
         }
     }, []);
 
