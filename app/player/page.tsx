@@ -289,7 +289,7 @@ function PlayerContent() {
     });
 
     if (DEBUG || debugMode) {
-      console.log(
+      console.debug(
         "PLAYLIST REBUILT (first 10):",
         sorted.slice(0, 10).map((i) => ({ id: i.id, kind: i.kind, flow: i.flow_order, dur: i.duration }))
       );
@@ -314,14 +314,14 @@ function PlayerContent() {
       if (playlist.length === 0) return;
 
       if (!rotation.enabled && !opts?.force) {
-        if (DEBUG || debugMode) console.log("⏸️ Rotation disabled, skipping advance");
+        if (DEBUG || debugMode) console.debug("⏸️ Rotation disabled, skipping advance");
         return;
       }
 
       const currentIdx = currentId ? playlist.findIndex((p) => p.id === currentId) : -1;
       const nextIdx = (currentIdx + 1) % playlist.length;
 
-      if (DEBUG || debugMode) console.log(`⏩ Advancing: ${currentIdx} -> ${nextIdx} (${playlist[nextIdx].id})`);
+      if (DEBUG || debugMode) console.debug(`⏩ Advancing: ${currentIdx} -> ${nextIdx} (${playlist[nextIdx].id})`);
 
       setCurrentId(playlist[nextIdx].id);
     },
@@ -347,7 +347,7 @@ function PlayerContent() {
 
     const safeDurationSeconds = clampNumber(currentItem.duration, 10, 1, 60 * 60);
 
-    if (DEBUG || debugMode) console.log(`⏱️ Item timer: ${currentItem.id} (${safeDurationSeconds}s)`);
+    if (DEBUG || debugMode) console.debug(`⏱️ Item timer: ${currentItem.id} (${safeDurationSeconds}s)`);
 
     const timer = setTimeout(() => handleNext(), safeDurationSeconds * 1000);
     return () => clearTimeout(timer);
