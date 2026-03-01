@@ -113,8 +113,8 @@ function LessonScheduleInner({ profile }: { profile: any }) {
 
                 setParsedData(results);
                 toast.success(`${results.length} kayıt bulundu. Yüklemek için "Veritabanına Yükle" butonuna tıklayın.`);
-            } catch (err: any) {
-                toast.error("Excel okuma hatası: " + err.message);
+            } catch (err: unknown) {
+                toast.error("Excel okuma hatası: " + (err instanceof Error ? err.message : String(err)));
             }
         };
 
@@ -370,9 +370,9 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                     // Yüklemeden sonra verileri tekrar çek ve sayısını logla
                     await load();
                     console.log(`[handleImport] Yükleme sonrası entries sayısı: ${entries.length}`);
-                } catch (err: any) {
+                } catch (err: unknown) {
                     console.error("[handleImport] HATA:", err);
-                    toast.error("Hata: " + err.message, { id: loadingToast });
+                    toast.error("Hata: " + (err instanceof Error ? err.message : String(err)), { id: loadingToast });
                 } finally {
                     setImporting(false);
                 }
@@ -396,8 +396,8 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                     if (error) throw error;
                     toast.success("Tüm veriler silindi", { id: loadingToast });
                     await load();
-                } catch (err: any) {
-                    toast.error("Hata: " + err.message, { id: loadingToast });
+                } catch (err: unknown) {
+                    toast.error("Hata: " + (err instanceof Error ? err.message : String(err)), { id: loadingToast });
                 }
             },
         });
@@ -447,8 +447,8 @@ function LessonScheduleInner({ profile }: { profile: any }) {
             setEditedEntries(new Map());
             setEditMode(false);
             await load();
-        } catch (err: any) {
-            toast.error("Hata: " + err.message, { id: loadingToast });
+        } catch (err: unknown) {
+            toast.error("Hata: " + (err instanceof Error ? err.message : String(err)), { id: loadingToast });
         } finally {
             setSaving(false);
         }

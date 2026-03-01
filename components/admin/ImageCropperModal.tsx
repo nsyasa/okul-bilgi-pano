@@ -132,8 +132,8 @@ export function ImageCropperModal({
             const suggestedName = `${Date.now()}_${mode}.webp`;
 
             onConfirm({ blob, suggestedName, mode });
-        } catch (err: any) {
-            console.error("Image processing failed:", err);
+        } catch (err: unknown) {
+            console.error("Image processing failed:", err instanceof Error ? err.message : String(err));
             // Let caller handle via toast
         } finally {
             setProcessing(false);

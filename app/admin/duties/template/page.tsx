@@ -70,8 +70,8 @@ function DutyTemplateInner({ profile }: any) {
         });
         setTemplate(fullTemplate);
       }
-    } catch (err: any) {
-      toast.error("Yükleme hatası: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Yükleme hatası: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -122,8 +122,8 @@ function DutyTemplateInner({ profile }: any) {
 
       toast.success(`✅ ${toInsert.length} kayıt kaydedildi`, { id: loadingToast });
       await loadTemplate();
-    } catch (err: any) {
-      toast.error("Kaydetme hatası: " + err.message, { id: loadingToast });
+    } catch (err: unknown) {
+      toast.error("Kaydetme hatası: " + (err instanceof Error ? err.message : String(err)), { id: loadingToast });
     } finally {
       setSaving(false);
     }
