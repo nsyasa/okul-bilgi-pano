@@ -1,6 +1,21 @@
 import { supabasePlayer } from "./supabasePlayer";
-import type { PlayerBundle } from "@/types/player";
+import type {
+  PlayerBundle,
+  DutyTeacher,
+  DutyTemplateEntry,
+  LessonScheduleEntry,
+  PlayerSettings,
+  Announcement,
+  EventItem,
+  TickerItem,
+  YouTubeVideo,
+  ScheduleTemplate,
+  ScheduleOverride,
+  SchoolInfo,
+  SpecialDate
+} from "@/types/player";
 import { saveCache, loadCache } from "./storage";
+import { type SupabaseClient } from "@supabase/supabase-js";
 
 const CACHE_KEY = "pano_player_bundle_v1";
 
@@ -13,7 +28,7 @@ function todayKeyTR(now: Date) {
  * Bugünün nöbetçi öğretmenlerini çeker.
  * Önce bugüne özel kayıt var mı bakar, yoksa haftalık şablondan alır.
  */
-async function fetchDutyTeachers(sb: any, dateKey: string, weekday: number): Promise<any[]> {
+async function fetchDutyTeachers(sb: SupabaseClient, dateKey: string, weekday: number): Promise<DutyTeacher[]> {
   // 1. Önce bugüne özel kayıt var mı kontrol et
   const { data: todayDuties, error: todayErr } = await sb
     .from("duty_teachers")
@@ -24,7 +39,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string, weekday: number): Pro
   if (todayErr) throw todayErr;
 
   if (todayDuties && todayDuties.length > 0) {
-    return todayDuties;
+    return todayDuties as DutyTeacher[];
   }
 
   // 2. Bugüne özel yoksa, haftalık şablondan al
@@ -44,7 +59,7 @@ async function fetchDutyTeachers(sb: any, dateKey: string, weekday: number): Pro
     }
 
     // Şablonu DutyTeacher formatına çevir
-    return (templateDuties || []).map((t: any) => ({
+    return (templateDuties || []).map((t: DutyTemplateEntry) => ({
       id: t.id,
       date: dateKey,
       name: t.teacher_name,
@@ -72,8 +87,8 @@ export async function fetchPlayerBundle(): Promise<{
 
   try {
     // Lesson schedule için pagination ile tüm kayıtları çek
-    async function fetchAllLessonSchedule() {
-      let allData: any[] = [];
+    async function fetchAllLessonSchedule(): Promise<LessonScheduleEntry[]> {
+      let allData: LessonScheduleEntry[] = [];
       let from = 0;
       const pageSize = 1000;
       let hasMore = true;
@@ -87,7 +102,7 @@ export async function fetchPlayerBundle(): Promise<{
 
         if (error) throw error;
         if (!data || data.length < pageSize) hasMore = false;
-        allData = [...allData, ...(data || [])];
+        allData = [...allData, ...((data as LessonScheduleEntry[]) || [])];
         from += pageSize;
       }
       return allData;
@@ -164,25 +179,25 @@ export async function fetchPlayerBundle(): Promise<{
     const anyErr = ann.error || ev.error || tick.error || temp.error || over.error || info.error || spec.error || yt.error || settings.error;
     if (anyErr) throw anyErr;
 
-    const settingsMap = (settings.data ?? []).reduce((acc: any, row: any) => {
+    const settingsMap = (settings.data ?? []).reduce((acc: Record<string, unknown>, row: { key: string; value: unknown }) => {
       acc[row.key] = row.value;
       return acc;
-    }, {} as any);
+    }, {} as Record<string, unknown>);
 
     const bundle: PlayerBundle = {
       generatedAt: Date.now(),
-      announcements: (ann.data ?? []) as any,
-      events: (ev.data ?? []) as any,
-      duties: duties as any,
-      dutyTemplates: (dutyTemp.data ?? []) as any,
-      ticker: (tick.data ?? []) as any,
-      youtubeVideos: (yt.data ?? []) as any,
-      settings: settingsMap as any,
-      templates: (temp.data ?? []) as any,
-      overrides: (over.data ?? []) as any,
-      schoolInfo: (info.data ?? []) as any,
-      specialDates: (spec.data ?? []) as any,
-      lessonSchedule: lessonScheduleData as any,
+      announcements: (ann.data ?? []) as Announcement[],
+      events: (ev.data ?? []) as EventItem[],
+      duties: duties,
+      dutyTemplates: (dutyTemp.data ?? []) as DutyTemplateEntry[],
+      ticker: (tick.data ?? []) as TickerItem[],
+      youtubeVideos: (yt.data ?? []) as YouTubeVideo[],
+      settings: settingsMap as PlayerSettings,
+      templates: (temp.data ?? []) as ScheduleTemplate[],
+      overrides: (over.data ?? []) as ScheduleOverride[],
+      schoolInfo: (info.data ?? []) as SchoolInfo[],
+      specialDates: (spec.data ?? []) as SpecialDate[],
+      lessonSchedule: lessonScheduleData,
     };
 
     saveCache(CACHE_KEY, bundle);
