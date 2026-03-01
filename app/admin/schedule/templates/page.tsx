@@ -153,16 +153,17 @@ function TemplatesInner({ profile }: any) {
     setBusy(true);
     setMsg(null);
     try {
-      const up1 = rowIds.mon_thu
-        ? sb.from("schedule_templates").update({ slots: monThu }).eq("id", rowIds.mon_thu)
-        : sb.from("schedule_templates").insert({ key: "mon_thu", slots: monThu });
-      const up2 = rowIds.fri
-        ? sb.from("schedule_templates").update({ slots: fri }).eq("id", rowIds.fri)
-        : sb.from("schedule_templates").insert({ key: "fri", slots: fri });
+      const payload = [];
+      if (rowIds.mon_thu) payload.push({ id: rowIds.mon_thu, key: "mon_thu", slots: monThu });
+      else payload.push({ key: "mon_thu", slots: monThu });
 
-      const [r1, r2] = await Promise.all([up1, up2]);
-      if (r1.error) throw r1.error;
-      if (r2.error) throw r2.error;
+      if (rowIds.fri) payload.push({ id: rowIds.fri, key: "fri", slots: fri });
+      else payload.push({ key: "fri", slots: fri });
+
+      const { error } = await sb.from("schedule_templates").upsert(payload);
+
+      if (error) throw error;
+
       setMsg("✅ Kaydedildi.");
       setEditMode(false);
       await load();
