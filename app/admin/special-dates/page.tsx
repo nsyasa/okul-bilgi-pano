@@ -139,8 +139,8 @@ function SpecialDatesInner({ profile }: { profile: Profile }) {
             setMsg("Kayıt başarıyla kaydedildi.");
             await load();
             resetForm();
-        } catch (e: any) {
-            setMsg(e?.message ?? "Kayıt başarısız.");
+        } catch (e: unknown) {
+            setMsg(e instanceof Error ? e.message : "Kayıt başarısız.");
         } finally {
             setBusy(false);
         }
