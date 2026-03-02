@@ -5,10 +5,9 @@ import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { YouTubeVideo } from "@/types/player";
-import type { Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
+import type { Profile } from "@/lib/adminAuth";
 
-// Form payload definition
 type Form = Partial<YouTubeVideo> & { id?: string };
 
 export default function YouTubePage() {
