@@ -8,6 +8,7 @@ import type { YouTubeVideo } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 
+// Form payload definition
 type Form = Partial<YouTubeVideo> & { id?: string };
 
 export default function YouTubePage() {
