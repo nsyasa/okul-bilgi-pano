@@ -7,6 +7,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { YouTubeVideo } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
+import type { Profile } from "@/lib/adminAuth";
 
 type Form = Partial<YouTubeVideo> & { id?: string };
 
@@ -67,7 +68,11 @@ function YouTubeInner({ profile }: { profile: Profile }) {
   const save = async () => {
     if (!editing) return;
 
+<<<<<<< HEAD
+    const payload: Partial<YouTubeVideo> = {
+=======
     const payload: Omit<YouTubeVideo, "id" | "created_at"> = {
+>>>>>>> origin/main
       title: (editing.title ?? "").trim() || null,
       url: (editing.url ?? "").trim(),
       is_active: !!editing.is_active,
