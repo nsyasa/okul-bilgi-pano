@@ -6,6 +6,7 @@ import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { ymdNowTR } from "@/lib/validate";
+import { Profile } from "@/lib/adminAuth";
 
 // Icons for cards
 const Icons = {
@@ -237,7 +238,7 @@ export default function AdminHome() {
   );
 }
 
-function Dashboard({ profile }: { profile: any }) {
+function Dashboard({ profile }: { profile: Profile }) {
   const [stats, setStats] = useState({
     dutyCount: 0,
     publishedAnnouncements: 0,
