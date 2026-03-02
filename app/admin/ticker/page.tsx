@@ -170,6 +170,7 @@ function TickerInner({ profile }: any) {
                     onClick={() => setEditing(t)}
                     className="w-8 h-8 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
                     title="Düzenle"
+                    aria-label="Düzenle"
                   >
                     ✎
                   </button>
@@ -177,6 +178,7 @@ function TickerInner({ profile }: any) {
                     onClick={() => del(t.id)}
                     className="w-8 h-8 rounded-lg bg-red-500/5 text-red-400/50 hover:bg-red-500/15 hover:text-red-400 flex items-center justify-center transition-colors"
                     title="Sil"
+                    aria-label="Sil"
                   >
                     🗑
                   </button>
@@ -202,6 +204,7 @@ function TickerInner({ profile }: any) {
               <button
                 onClick={() => setEditing(null)}
                 className="w-8 h-8 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
+                aria-label="Kapat"
               >
                 ✕
               </button>
