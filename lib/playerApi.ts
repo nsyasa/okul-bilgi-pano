@@ -50,7 +50,8 @@ async function fetchDutyTeachers(sb: SupabaseClient, dateKey: string, weekday: n
       .from("duty_templates")
       .select("*")
       .eq("day_of_week", weekday)
-      .order("area", { ascending: true });
+      .order("area", { ascending: true })
+      .returns<DutyTemplateEntry[]>();
 
     if (templateErr) {
       // Tablo yoksa veya hata olursa sessizce devam et
@@ -59,7 +60,7 @@ async function fetchDutyTeachers(sb: SupabaseClient, dateKey: string, weekday: n
     }
 
     // Şablonu DutyTeacher formatına çevir
-    return (templateDuties || []).map((t: DutyTemplateEntry) => ({
+    return (templateDuties || []).map((t) => ({
       id: t.id,
       date: dateKey,
       name: t.teacher_name,
@@ -202,7 +203,8 @@ export async function fetchPlayerBundle(): Promise<{
 
     saveCache(CACHE_KEY, bundle);
     return { bundle, fromCache: false };
-  } catch {
+  } catch (error: unknown) {
+    console.error("fetchPlayerBundle error:", error instanceof Error ? error.message : String(error));
     const cached = loadCache<PlayerBundle>(CACHE_KEY);
     if (cached?.value) {
       return {
