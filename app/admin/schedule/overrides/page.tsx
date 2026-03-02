@@ -73,8 +73,8 @@ function OverridesInner({ profile }: { profile: Profile }) {
       setMsg("Program başarıyla kaydedildi.");
       await load();
       if (!editingId) resetForm(); // Only reset if it was a new creation, keep editing open if editing
-    } catch (e: any) {
-      setMsg(e?.message ?? "Kaydedilemedi.");
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : "Kaydedilemedi.");
     } finally {
       setBusy(false);
     }

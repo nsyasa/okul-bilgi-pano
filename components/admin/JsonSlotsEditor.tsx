@@ -44,8 +44,8 @@ export function JsonSlotsEditor(props: {
             }
             setErr(null);
             props.onChange(parsed);
-          } catch (e: unknown) {
-            setErr(e instanceof Error ? e.message : "JSON hatası");
+          } catch (error: unknown) {
+            setErr(error instanceof Error ? error.message : "JSON hatası");
           }
         }}
       />
