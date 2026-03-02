@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
+import type { Profile } from "@/lib/adminAuth";
 import type { SchoolInfo } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextArea, TextInput } from "@/components/admin/FormBits";
 import { ImageUploader } from "@/components/admin/ImageUploader";
@@ -14,7 +15,7 @@ export default function SchoolInfoPage() {
   return <AuthGate>{(profile) => <SchoolInfoInner profile={profile} />}</AuthGate>;
 }
 
-function SchoolInfoInner({ profile }: any) {
+function SchoolInfoInner({ profile }: { profile: Profile }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<SchoolInfo[]>([]);
   const [editing, setEditing] = useState<Form | null>(null);
@@ -30,7 +31,7 @@ function SchoolInfoInner({ profile }: any) {
 
   const load = async () => {
     const { data, error } = await sb.from("school_info").select("*").order("title", { ascending: true }).limit(200);
-    if (!error) setItems((data ?? []) as any);
+    if (!error) setItems((data ?? []) as SchoolInfo[]);
   };
 
   const loadSettings = async () => {
@@ -38,7 +39,7 @@ function SchoolInfoInner({ profile }: any) {
 
     if (data) {
       const newSettings = { ...settings };
-      data.forEach((row: any) => {
+      data.forEach((row: { key: string; value: string }) => {
         if (row.key === "school_name_line1") newSettings.school_name_line1 = row.value;
         if (row.key === "school_name_line2") newSettings.school_name_line2 = row.value;
         if (row.key === "school_logo_url") newSettings.school_logo_url = row.value;
@@ -57,7 +58,7 @@ function SchoolInfoInner({ profile }: any) {
 
   const save = async () => {
     if (!editing) return;
-    const payload: any = { title: (editing.title ?? "").trim(), body: editing.body ?? "" };
+    const payload: Partial<SchoolInfo> = { title: (editing.title ?? "").trim(), body: editing.body ?? "" };
     if (!payload.title) return;
 
     const res = editing.id ? await sb.from("school_info").update(payload).eq("id", editing.id) : await sb.from("school_info").insert(payload);
