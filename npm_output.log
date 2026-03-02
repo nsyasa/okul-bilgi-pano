@@ -1,0 +1,12 @@
+
+> okul-pano-player@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1829ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 7.3s (603 modules)
+ GET /admin 200 in 7879ms
