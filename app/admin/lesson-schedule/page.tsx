@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 import toast from "react-hot-toast";
 import type { LessonScheduleEntry } from "@/types/player";
 import * as XLSX from "xlsx";
+import type { Profile } from "@/lib/adminAuth";
 
 const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -18,7 +19,7 @@ export default function LessonSchedulePage() {
     return <AuthGate>{(profile) => <LessonScheduleInner profile={profile} />}</AuthGate>;
 }
 
-function LessonScheduleInner({ profile }: { profile: any }) {
+function LessonScheduleInner({ profile }: { profile: Profile }) {
     const sb = useMemo(() => supabaseBrowser(), []);
     const [entries, setEntries] = useState<LessonScheduleEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -69,7 +70,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
             }
 
             console.log(`[load] TOPLAM çekilen kayıt: ${allData.length}`);
-            setEntries(allData as any);
+            setEntries(allData as LessonScheduleEntry[]);
         } catch (err) {
             console.error("[load] Veri çekme hatası:", err);
         }
@@ -97,7 +98,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
                 const worksheet = workbook.Sheets[sheetName];
 
                 // Convert to JSON with header row
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
 
                 if (jsonData.length < 2) {
                     toast.error("Excel dosyası boş veya geçersiz format.");
@@ -125,7 +126,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
     // 1. satır: Öğretmen | Pazartesi (10 sütun) | Salı (10 sütun) | ...
     // 2. satır: Saat | 08:30-09:10 | 09:20-10:00 | ... (veya 1, 2, 3, ...)
     // 3. satırdan itibaren: Öğretmen verileri
-    const parseExcelRows = (rows: any[][]) => {
+    const parseExcelRows = (rows: unknown[][]) => {
         const results: { teacher_name: string; day_of_week: number; lesson_number: number; class_name: string | null }[] = [];
 
         if (rows.length < 3) {
@@ -138,7 +139,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
 
         // Gün adlarını kontrol et
         const dayNames = ["pazartesi", "salı", "sali", "çarşamba", "carsamba", "çarsamba", "perşembe", "persembe", "cuma"];
-        const hasMultiRowHeader = row0.some((cell: any) => {
+        const hasMultiRowHeader = row0.some((cell: unknown) => {
             const cellStr = String(cell || "").toLowerCase().trim();
             return dayNames.some(d => cellStr.includes(d));
         });
@@ -237,7 +238,7 @@ function LessonScheduleInner({ profile }: { profile: any }) {
     };
 
     // Eski basit parser (fallback)
-    const parseExcelRowsSimple = (rows: any[][]) => {
+    const parseExcelRowsSimple = (rows: unknown[][]) => {
         const results: { teacher_name: string; day_of_week: number; lesson_number: number; class_name: string | null }[] = [];
 
         const header = rows[0];

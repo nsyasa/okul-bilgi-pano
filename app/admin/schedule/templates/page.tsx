@@ -8,6 +8,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { BellSlot } from "@/types/player";
 import { JsonSlotsEditor } from "@/components/admin/JsonSlotsEditor";
 import { PrimaryButton } from "@/components/admin/FormBits";
+import type { Profile } from "@/lib/adminAuth";
 
 type TemplateRow = { id: string; key: "mon_thu" | "fri"; slots: BellSlot[] };
 
@@ -70,7 +71,7 @@ function SlotTable({ slots, title }: { slots: BellSlot[]; title: string }) {
   );
 }
 
-function TemplatesInner({ profile }: any) {
+function TemplatesInner({ profile }: { profile: Profile }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [monThu, setMonThu] = useState<BellSlot[]>([]);
   const [fri, setFri] = useState<BellSlot[]>([]);
@@ -82,12 +83,12 @@ function TemplatesInner({ profile }: any) {
   const load = async () => {
     const { data, error } = await sb.from("schedule_templates").select("*").limit(10);
     if (error) return;
-    const rows = (data ?? []) as any as TemplateRow[];
+    const rows = (data ?? []) as unknown as TemplateRow[];
     const a = rows.find((r) => r.key === "mon_thu");
     const b = rows.find((r) => r.key === "fri");
     setRowIds({ mon_thu: a?.id, fri: b?.id });
-    setMonThu((a?.slots as any) ?? []);
-    setFri((b?.slots as any) ?? []);
+    setMonThu((a?.slots as BellSlot[]) ?? []);
+    setFri((b?.slots as BellSlot[]) ?? []);
   };
 
   useEffect(() => {

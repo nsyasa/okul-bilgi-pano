@@ -12,7 +12,7 @@ export type Announcement = {
   end_at: string | null;   // ISO
   category: "general" | "event" | "special_day" | "sensitive" | "health" | "info";
   approved_label?: boolean | null;
-  display_mode?: "small" | "big" | "image" | null;
+  display_mode?: "small" | "big" | "image" | "text" | null;
   flow_order?: number | null;
   created_at: string;
 };

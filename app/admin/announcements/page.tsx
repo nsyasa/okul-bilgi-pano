@@ -200,8 +200,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       setEditing(null);
       await load();
       toast.success("Başarıyla kaydedildi.");
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Bir hata oluştu.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Bir hata oluştu.");
     } finally {
       setBusy(false);
     }
@@ -309,8 +309,8 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
       setEditingVideo(null);
       await loadVideos();
       toast.success("Video kaydedildi.");
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Hata oluştu.");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Hata oluştu.");
     } finally {
       setVideoBusy(false);
     }

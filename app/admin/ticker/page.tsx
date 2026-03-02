@@ -8,6 +8,7 @@ import type { TickerItem } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 import toast from "react-hot-toast";
+import type { Profile } from "@/lib/adminAuth";
 
 type Form = Partial<TickerItem> & { id?: string };
 
@@ -15,7 +16,7 @@ export default function TickerPage() {
   return <AuthGate>{(profile) => <TickerInner profile={profile} />}</AuthGate>;
 }
 
-function TickerInner({ profile }: any) {
+function TickerInner({ profile }: { profile: Profile }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<TickerItem[]>([]);
   const [editing, setEditing] = useState<Form | null>(null);
@@ -38,7 +39,7 @@ function TickerInner({ profile }: any) {
 
   const load = async () => {
     const { data, error } = await sb.from("ticker_items").select("*").order("priority", { ascending: false }).limit(200);
-    if (!error) setItems((data ?? []) as any);
+    if (!error) setItems((data ?? []) as TickerItem[]);
   };
 
   useEffect(() => {
@@ -55,7 +56,7 @@ function TickerInner({ profile }: any) {
 
   const save = async () => {
     if (!editing) return;
-    const payload: any = {
+    const payload: Partial<TickerItem> = {
       text: (editing.text ?? "").trim(),
       is_active: !!editing.is_active,
       priority: Number(editing.priority ?? 50),
