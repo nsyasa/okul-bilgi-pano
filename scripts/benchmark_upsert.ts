@@ -3,14 +3,14 @@ import { performance } from "perf_hooks";
 // Mock Supabase client
 const mockSb = {
   from: (table: string) => ({
-    update: (data: any) => ({
-      eq: async (field: string, value: any) => {
+    update: (data: Record<string, unknown>) => ({
+      eq: async (field: string, value: unknown) => {
         // Simulate network latency of 10ms per query
         await new Promise(resolve => setTimeout(resolve, 10));
         return { error: null };
       }
     }),
-    upsert: async (data: any[]) => {
+    upsert: async (data: Record<string, unknown>[]) => {
       // Simulate slightly higher network latency for a bulk request, e.g., 20ms
       await new Promise(resolve => setTimeout(resolve, 20));
       return { error: null };

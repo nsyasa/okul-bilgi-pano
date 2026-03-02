@@ -5,6 +5,7 @@ import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { YouTubeVideo } from "@/types/player";
+import type { Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 
 type Form = Partial<YouTubeVideo> & { id?: string };
@@ -13,7 +14,7 @@ export default function YouTubePage() {
   return <AuthGate>{(profile) => <YouTubeInner profile={profile} />}</AuthGate>;
 }
 
-function YouTubeInner({ profile }: any) {
+function YouTubeInner({ profile }: { profile: Profile }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [items, setItems] = useState<YouTubeVideo[]>([]);
   const [editing, setEditing] = useState<Form | null>(null);
@@ -66,7 +67,7 @@ function YouTubeInner({ profile }: any) {
   const save = async () => {
     if (!editing) return;
 
-    const payload: any = {
+    const payload: Partial<YouTubeVideo> = {
       title: (editing.title ?? "").trim() || null,
       url: (editing.url ?? "").trim(),
       is_active: !!editing.is_active,
