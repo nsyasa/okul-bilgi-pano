@@ -96,7 +96,7 @@ export function AnnouncementForm({ initialState, onClose, onSave, busy, titleOve
                         <FieldLabel>Kategori</FieldLabel>
                         <Select
                             value={formData.category ?? "general"}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                            onChange={(e) => setFormData({ ...formData, category: e.target.value as Announcement["category"] })}
                         >
                             <option value="general">Genel</option>
                             <option value="event">Etkinlik</option>
@@ -111,7 +111,7 @@ export function AnnouncementForm({ initialState, onClose, onSave, busy, titleOve
                         <FieldLabel>Durum</FieldLabel>
                         <Select
                             value={formData.status ?? "draft"}
-                            onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                            onChange={(e) => setFormData({ ...formData, status: e.target.value as Announcement["status"] })}
                         >
                             <option value="draft">Taslak</option>
                             <option value="pending_review">Onay Bekliyor</option>

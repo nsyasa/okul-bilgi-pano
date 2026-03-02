@@ -38,8 +38,8 @@ export function ImageUploader(props: { value: string | null; onChange: (url: str
       if (!data) throw new Error("Upload failed");
       const { data: pub } = sb.storage.from("pano-media").getPublicUrl(data.path);
       props.onChange(pub.publicUrl);
-    } catch (e: any) {
-      setErr(e?.message ?? "Yükleme hatası");
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Yükleme hatası");
     } finally {
       setBusy(false);
       setCropFile(null);
