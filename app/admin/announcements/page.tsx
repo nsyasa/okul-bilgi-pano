@@ -410,6 +410,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                   : "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40"
                   }`}
                 title={isActive ? "Yayından Kaldır" : "Yayına Al"}
+                aria-label={isActive ? "Yayından Kaldır" : "Yayına Al"}
               >
                 {isActive ? "⏸" : "▶"}
               </button>
@@ -419,6 +420,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                 onClick={() => isAnnouncement && announcementItem ? setEditing(announcementItem) : videoItem && setEditingVideo(videoItem)}
                 className="p-1.5 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
                 title="Düzenle"
+                aria-label="Düzenle"
               >
                 ✎
               </button>
@@ -428,6 +430,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                 onClick={() => isAnnouncement && announcementItem ? del(announcementItem.id) : videoItem && delVideo(videoItem.id)}
                 className="p-1.5 rounded-lg bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
                 title="Sil"
+                aria-label="Sil"
               >
                 🗑
               </button>
@@ -640,7 +643,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
               <h2 className="text-white text-xl font-bold">
                 {editingVideo.id ? "Video Düzenle" : "Yeni Video"}
               </h2>
-              <button onClick={() => setEditingVideo(null)} className="text-white/40 hover:text-white text-xl">×</button>
+              <button onClick={() => setEditingVideo(null)} className="text-white/40 hover:text-white text-xl" aria-label="Kapat">×</button>
             </div>
 
             <div className="space-y-4">
