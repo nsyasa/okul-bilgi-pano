@@ -167,8 +167,8 @@ function TemplatesInner({ profile }: any) {
       setMsg("✅ Kaydedildi.");
       setEditMode(false);
       await load();
-    } catch (e: any) {
-      setMsg(e?.message ?? "Hata");
+    } catch (e: unknown) {
+      setMsg(e instanceof Error ? e.message : "Hata");
     } finally {
       setBusy(false);
     }
