@@ -5,6 +5,28 @@ import { useEffect, useMemo, useState } from "react";
 import { BRAND } from "@/lib/branding";
 import type { PlayerSettings } from "@/types/player";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation every second
+const timeFormatter = new Intl.DateTimeFormat("tr-TR", {
+  timeZone: "Europe/Istanbul",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+});
+
+const dateFormatter = new Intl.DateTimeFormat("tr-TR", {
+  timeZone: "Europe/Istanbul",
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "2-digit",
+});
+
+const syncFormatter = new Intl.DateTimeFormat("tr-TR", {
+  timeZone: "Europe/Istanbul",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: number | null; settings?: PlayerSettings }) {
   const [mounted, setMounted] = useState(false);
   // ✅ Hydration fix: zamanı sadece client'ta üret (SSR'da null)
@@ -22,32 +44,17 @@ export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: nu
 
   const timeStr = useMemo(() => {
     if (!now) return "—";
-    return new Intl.DateTimeFormat("tr-TR", {
-      timeZone: "Europe/Istanbul",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    }).format(now);
+    return timeFormatter.format(now);
   }, [now]);
 
   const dateStr = useMemo(() => {
     if (!now) return "—";
-    return new Intl.DateTimeFormat("tr-TR", {
-      timeZone: "Europe/Istanbul",
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-    }).format(now);
+    return dateFormatter.format(now);
   }, [now]);
 
   const syncStr = useMemo(() => {
     if (!props.lastSyncAt) return null;
-    return new Intl.DateTimeFormat("tr-TR", {
-      timeZone: "Europe/Istanbul",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(props.lastSyncAt));
+    return syncFormatter.format(new Date(props.lastSyncAt));
   }, [props.lastSyncAt]);
 
   if (!mounted) return null;
