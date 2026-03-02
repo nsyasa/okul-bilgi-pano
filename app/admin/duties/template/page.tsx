@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
+import type { Profile } from "@/lib/adminAuth";
 import { BRAND } from "@/lib/branding";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
@@ -28,7 +29,7 @@ const DAYS = [
   { num: 5, label: "CUMA" },
 ];
 
-function DutyTemplateInner({ profile }: any) {
+function DutyTemplateInner({ profile }: { profile: Profile }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [template, setTemplate] = useState<TemplateEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +61,7 @@ function DutyTemplateInner({ profile }: any) {
         const fullTemplate: TemplateEntry[] = [];
         DAYS.forEach(day => {
           AREAS.forEach(area => {
-            const existing = data.find((d: any) => d.day_of_week === day.num && d.area === area);
+            const existing = data.find((d: TemplateEntry) => d.day_of_week === day.num && d.area === area);
             if (existing) {
               fullTemplate.push(existing);
             } else {
