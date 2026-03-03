@@ -70,9 +70,9 @@ export function usePlayerBundle() {
                 if (r.cacheTimestamp) setCacheTimestamp(r.cacheTimestamp);
                 if (r.isStale) setIsCacheStale(true);
             }
-        } catch (err: unknown) {
+        } catch (error: unknown) {
             setConsecutiveFetchFailures((prev) => prev + 1);
-            setLastError(err instanceof Error ? err.message : String(err));
+            setLastError(error instanceof Error ? error.message : String(error));
         }
     }, []);
 

@@ -7,6 +7,7 @@ import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { Announcement, PlayerRotationSettings, YouTubeVideo } from "@/types/player";
+import type { Profile } from "@/lib/adminAuth";
 import { toast } from "react-hot-toast";
 
 export default function FlowPage() {
@@ -55,7 +56,7 @@ function extractYouTubeId(input: string | null | undefined) {
     return input;
 }
 
-function FlowInner({ profile }: { profile: any }) {
+function FlowInner({ profile }: { profile: Profile }) {
     const sb = useMemo(() => supabaseBrowser(), []);
     const [items, setItems] = useState<FlowItem[]>([]);
     const [loading, setLoading] = useState(true);

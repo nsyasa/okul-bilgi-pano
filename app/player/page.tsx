@@ -583,7 +583,7 @@ function PlayerContent() {
           <TickerBar
             ticker={combinedTicker}
             now={now}
-            isAlert={bundle?.announcements.some((a: any) => a.category === "sensitive")}
+            isAlert={bundle?.announcements.some((a: Announcement) => a.category === "sensitive")}
             settings={bundle?.settings}
           />
         </div>

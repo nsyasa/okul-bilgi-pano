@@ -6,6 +6,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { BRAND } from "@/lib/branding";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { BellSlot } from "@/types/player";
+import type { Profile } from "@/lib/adminAuth";
 import { JsonSlotsEditor } from "@/components/admin/JsonSlotsEditor";
 import { PrimaryButton } from "@/components/admin/FormBits";
 
@@ -70,7 +71,7 @@ function SlotTable({ slots, title }: { slots: BellSlot[]; title: string }) {
   );
 }
 
-function TemplatesInner({ profile }: any) {
+function TemplatesInner({ profile }: { profile: Profile }) {
   const sb = useMemo(() => supabaseBrowser(), []);
   const [monThu, setMonThu] = useState<BellSlot[]>([]);
   const [fri, setFri] = useState<BellSlot[]>([]);

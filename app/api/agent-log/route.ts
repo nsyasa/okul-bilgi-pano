@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     // But for a simple logger, await is fine as long as we catch validation errors
     await fs.mkdir(logDir, { recursive: true }).catch(() => { });
 
-    const entry: any = { ...body };
+    const entry: Record<string, unknown> = { ...body };
     if (!entry.timestamp) entry.timestamp = Date.now();
     if (!entry.id) entry.id = `log_${entry.timestamp}_${crypto.randomUUID()}`;
 
