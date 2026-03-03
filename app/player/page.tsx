@@ -27,6 +27,9 @@ const DEBUG = false;
 // ✅ Ticker asla kapanmasın diye güvenli alt boşluk (ticker + padding)
 const TICKER_SAFE_PX = 96;
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" });
+
 // Helper to check if item is in valid time window
 function inWindow(item: { start_at?: string | null; end_at?: string | null }, now: Date) {
   const t = now.getTime();
@@ -364,7 +367,7 @@ function PlayerContent() {
         currentLessonNumber: null as number | null,
       };
 
-    const dateKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(nowTR);
+    const dateKey = dateKeyFormatter.format(nowTR);
     const weekday = nowTR.getDay();
     const picked = pickSlotsForToday({ dateKey, weekday, templates: b.templates as any, overrides: b.overrides as any });
     const st = computeNowStatus(nowTR, picked.slots);
