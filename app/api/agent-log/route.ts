@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     await fs.mkdir(logDir, { recursive: true }).catch(() => { });
 
     const entry: Record<string, unknown> = { ...body };
-    if (!entry.timestamp) entry["timestamp"] = Date.now();
-    if (!entry.id) entry["id"] = `log_${entry.timestamp}_${crypto.randomUUID()}`;
+    if (!entry.timestamp) entry.timestamp = Date.now();
+    if (!entry.id) entry.id = `log_${String(entry.timestamp)}_${crypto.randomUUID()}`;
 
     const line = JSON.stringify(entry) + "\n";
     await fs.appendFile(logPath, line, "utf8").catch(err => console.error("Log write failed", err));
@@ -36,4 +36,3 @@ export async function GET() {
 export async function OPTIONS() {
   return NextResponse.json({ ok: true });
 }
-

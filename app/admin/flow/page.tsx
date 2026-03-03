@@ -530,6 +530,7 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                             onClick={() => onMove("up")}
                             disabled={index === 0}
                             className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white disabled:opacity-10"
+                            aria-label="Yukarı taşı"
                         >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" /></svg>
                         </button>
@@ -537,6 +538,7 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                             onClick={() => onMove("down")}
                             disabled={index === total - 1}
                             className="p-1 rounded hover:bg-white/10 text-white/40 hover:text-white disabled:opacity-10"
+                            aria-label="Aşağı taşı"
                         >
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
                         </button>
@@ -548,6 +550,7 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                     onClick={onDelete}
                     className="p-2 text-white/20 hover:text-red-400 transition-colors"
                     title="Sil"
+                    aria-label="Sil"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
