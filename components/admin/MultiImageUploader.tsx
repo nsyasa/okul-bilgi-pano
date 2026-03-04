@@ -138,10 +138,11 @@ export function MultiImageUploader({ value, onChange }: { value: string[] | null
                 <button
                   type="button"
                   onClick={() => remove(idx)}
+                  aria-label="Resmi Kaldır"
                   className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{ background: "rgba(0,0,0,0.7)", color: "white" }}
                 >
-                  ×
+                  <span aria-hidden="true">×</span>
                 </button>
               </div>
             ))}

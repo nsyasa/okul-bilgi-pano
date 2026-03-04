@@ -1,0 +1,3 @@
+## 2024-03-04 - ARIA labels for icon-only buttons
+**Learning:** Icon-only buttons using just characters (like '×' for close/remove) are common patterns but completely inaccessible to screen readers without an `aria-label`. They also need `aria-hidden="true"` on the text element inside to avoid screen readers reading out the literal character (e.g. "times").
+**Action:** Always verify icon-only buttons (especially close/dismiss/remove actions) have a descriptive, translated `aria-label` (e.g. `aria-label="Kapat"` or `aria-label="Resmi Kaldır"`) and that the visual icon character is hidden from screen readers.
