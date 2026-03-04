@@ -46,10 +46,12 @@ export const DUTY_WEEKLY_TEMPLATE: Record<"monday" | "tuesday" | "wednesday" | "
   ]
 };
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const dateFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" });
+
 export function generateDutySchedule(startDate: string, endDate: string) {
   const start = new Date(startDate + "T12:00:00");
   const end = new Date(endDate + "T12:00:00");
-  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" });
 
   const dates: string[] = [];
   const allData: { date: string; name: string; area: string; note: string | null }[] = [];
@@ -65,7 +67,7 @@ export function generateDutySchedule(startDate: string, endDate: string) {
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const weekday = d.getDay();
     if (!(weekday in dayMap)) continue;
-    const dateKey = fmt.format(d);
+    const dateKey = dateFormatter.format(d);
     dates.push(dateKey);
     const template = DUTY_WEEKLY_TEMPLATE[dayMap[weekday]];
     for (const t of template) {

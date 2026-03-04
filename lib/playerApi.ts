@@ -19,9 +19,12 @@ import { type SupabaseClient } from "@supabase/supabase-js";
 
 const CACHE_KEY = "pano_player_bundle_v1";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" });
+
 function todayKeyTR(now: Date) {
   // YYYY-MM-DD (Europe/Istanbul)
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(now);
+  return dateKeyFormatter.format(now);
 }
 
 /**

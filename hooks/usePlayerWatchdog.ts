@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const dateKeyFormatter = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" });
+
 export function usePlayerWatchdog(
     lastSuccessfulFetchAt: number,
     consecutiveFetchFailures: number
@@ -15,7 +18,7 @@ export function usePlayerWatchdog(
             const now = Date.now();
 
             // --- Günlük Reload Limiti Kontrolü (localStorage) ---
-            const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(new Date());
+            const todayKey = dateKeyFormatter.format(new Date());
             const dailyCountKey = `player_reload_count_${todayKey.replace(/-/g, "")}`;
 
             // Eski günlerin key'lerini temizle (sadece bugünkü kalsın)

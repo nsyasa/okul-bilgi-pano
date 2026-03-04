@@ -101,20 +101,22 @@ function StatsCard({ label, value, subtext, href, icon }: { label: string; value
   return content;
 }
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const trFormatter = new Intl.DateTimeFormat("sv-SE", {
+  timeZone: "Europe/Istanbul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 // Preview Tool Component
 function PreviewTool() {
   // Get current Istanbul time as default
   const getDefaultDateTime = () => {
     const now = new Date();
     // Format for datetime-local: YYYY-MM-DDTHH:mm
-    const trFormatter = new Intl.DateTimeFormat("sv-SE", {
-      timeZone: "Europe/Istanbul",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
     const formatted = trFormatter.format(now).replace(" ", "T");
     return formatted;
   };
