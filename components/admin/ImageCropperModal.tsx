@@ -166,10 +166,11 @@ export function ImageCropperModal({
                     </div>
                     <button
                         onClick={onCancel}
+                        aria-label="Kapat"
                         className="text-white/40 hover:text-white text-2xl leading-none px-2"
                         disabled={processing}
                     >
-                        ×
+                        <span aria-hidden="true">×</span>
                     </button>
                 </div>
 

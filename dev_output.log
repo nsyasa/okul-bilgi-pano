@@ -1,0 +1,70 @@
+
+> okul-pano-player@0.1.0 dev /app
+> next dev
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+
+ ✓ Starting...
+ ✓ Ready in 1795ms
+ ○ Compiling /admin/login ...
+ ✓ Compiled /admin/login in 5.4s (557 modules)
+ GET /admin/login 200 in 5974ms
+ GET /admin/login 200 in 82ms
+ ✓ Compiled in 1067ms (557 modules)
+ ⨯ ./app/test-uploader/page.tsx
+Error:
+  [31mx[0m You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/test-uploader/page.tsx[0m:1:1]
+ [2m1[0m | import { MultiImageUploader } from "@/components/admin/MultiImageUploader";
+ [2m2[0m | import { useState } from "react";
+   : [31;1m         ^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | export default function TestPage() {
+ [2m5[0m |     const [urls, setUrls] = useState<string[]>(["https://example.com/image1.jpg", "https://example.com/image2.jpg"]);
+   `----
+
+Import trace for requested module:
+./app/test-uploader/page.tsx
+ ⨯ ./app/test-uploader/page.tsx
+Error:
+  [31mx[0m You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/test-uploader/page.tsx[0m:1:1]
+ [2m1[0m | import { MultiImageUploader } from "@/components/admin/MultiImageUploader";
+ [2m2[0m | import { useState } from "react";
+   : [31;1m         ^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | export default function TestPage() {
+ [2m5[0m |     const [urls, setUrls] = useState<string[]>(["https://example.com/image1.jpg", "https://example.com/image2.jpg"]);
+   `----
+
+Import trace for requested module:
+./app/test-uploader/page.tsx
+ ○ Compiling /_not-found ...
+ ⨯ ./app/test-uploader/page.tsx
+Error:
+  [31mx[0m You're importing a component that needs useState. It only works in a Client Component but none of its parents are marked with "use client", so they're Server Components by default.
+  [31m|[0m Learn more: https://nextjs.org/docs/getting-started/react-essentials
+  [31m|[0m
+  [31m|[0m
+   ,-[[36;1;4m/app/app/test-uploader/page.tsx[0m:1:1]
+ [2m1[0m | import { MultiImageUploader } from "@/components/admin/MultiImageUploader";
+ [2m2[0m | import { useState } from "react";
+   : [31;1m         ^^^^^^^^[0m
+ [2m3[0m |
+ [2m4[0m | export default function TestPage() {
+ [2m5[0m |     const [urls, setUrls] = useState<string[]>(["https://example.com/image1.jpg", "https://example.com/image2.jpg"]);
+   `----
+
+Import trace for requested module:
+./app/test-uploader/page.tsx
+ GET /test-uploader 500 in 4348ms
+ ✓ Compiled /_error in 1492ms (799 modules)
+ GET /test-uploader 200 in 259ms
+ ✓ Compiled in 640ms (724 modules)
