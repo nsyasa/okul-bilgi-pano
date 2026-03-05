@@ -216,8 +216,9 @@ function OverridesInner({ profile }: { profile: Profile }) {
                           onClick={() => removeSlot(idx)}
                           className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-all absolute top-2 right-2 sm:static"
                           title="Sil"
+                          aria-label="Sil"
                         >
-                          🗑
+                          <span aria-hidden="true">🗑</span>
                         </button>
                       </div>
                     ))}
@@ -330,15 +331,17 @@ function OverridesInner({ profile }: { profile: Profile }) {
                         onClick={() => edit(r)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 text-white/70 hover:bg-white/20 hover:text-white transition-all border border-white/5 hover:border-white/20"
                         title="Düzenle"
+                        aria-label="Düzenle"
                       >
-                        ✎
+                        <span aria-hidden="true">✎</span>
                       </button>
                       <button
                         onClick={() => del(r)}
                         className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/5 text-red-400/70 hover:bg-red-500/20 hover:text-red-400 transition-all border border-red-500/5 hover:border-red-500/20"
                         title="Sil"
+                        aria-label="Sil"
                       >
-                        🗑
+                        <span aria-hidden="true">🗑</span>
                       </button>
                     </div>
                   </div>
