@@ -9,6 +9,7 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { Announcement, PlayerRotationSettings, YouTubeVideo } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import { toast } from "react-hot-toast";
+import type { Profile } from "@/lib/adminAuth";
 
 export default function FlowPage() {
     return <AuthGate>{(profile) => <FlowInner profile={profile} />}</AuthGate>;
@@ -119,8 +120,8 @@ function FlowInner({ profile }: { profile: Profile }) {
                 id: v.id,
                 kind: "video",
                 title: v.title || "İsimsiz Video",
-                flow_order: (v as any).flow_order ?? 0,
-                created_at: (v as any).created_at,
+                flow_order: (v as YouTubeVideo & { flow_order?: number }).flow_order ?? 0,
+                created_at: (v as YouTubeVideo & { created_at?: string }).created_at || new Date().toISOString(),
                 is_active: v.is_active,
                 image: `https://img.youtube.com/vi/${vidId}/mqdefault.jpg`,
                 type_label: "Video",
@@ -149,7 +150,7 @@ function FlowInner({ profile }: { profile: Profile }) {
                 videoSeconds: 30,
                 imageSeconds: 10,
                 textSeconds: 10,
-                ...(data.value as any),
+                ...(data.value as Partial<PlayerRotationSettings>),
             });
         }
     };
@@ -231,7 +232,7 @@ function FlowInner({ profile }: { profile: Profile }) {
                 }
             }
 
-            const updates: Promise<any>[] = [];
+            const updates: Promise<unknown>[] = [];
             if (announcementsToUpdate.length > 0) {
                 updates.push(Promise.resolve(sb.from("announcements").upsert(announcementsToUpdate).throwOnError()));
             }

@@ -9,6 +9,7 @@ import type { Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 import toast from "react-hot-toast";
+import type { Profile } from "@/lib/adminAuth";
 
 type Form = Partial<TickerItem> & { id?: string };
 
@@ -39,7 +40,7 @@ function TickerInner({ profile }: { profile: Profile }) {
 
   const load = async () => {
     const { data, error } = await sb.from("ticker_items").select("*").order("priority", { ascending: false }).limit(200);
-    if (!error) setItems((data ?? []) as any);
+    if (!error) setItems((data ?? []) as TickerItem[]);
   };
 
   useEffect(() => {

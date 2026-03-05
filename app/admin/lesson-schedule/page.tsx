@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 import type { LessonScheduleEntry } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import * as XLSX from "xlsx";
+import type { Profile } from "@/lib/adminAuth";
 
 const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -70,7 +71,7 @@ function LessonScheduleInner({ profile }: { profile: Profile }) {
             }
 
             console.log(`[load] TOPLAM çekilen kayıt: ${allData.length}`);
-            setEntries(allData as any);
+            setEntries(allData as LessonScheduleEntry[]);
         } catch (err) {
             console.error("[load] Veri çekme hatası:", err);
         }
@@ -98,7 +99,7 @@ function LessonScheduleInner({ profile }: { profile: Profile }) {
                 const worksheet = workbook.Sheets[sheetName];
 
                 // Convert to JSON with header row
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][];
 
                 if (jsonData.length < 2) {
                     toast.error("Excel dosyası boş veya geçersiz format.");

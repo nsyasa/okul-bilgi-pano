@@ -194,7 +194,7 @@ function PlayerContent() {
       imageSeconds: clampNumber(r.imageSeconds, 3, 1, 60 * 60),
       textSeconds: clampNumber(r.textSeconds, 10, 1, 60 * 60),
       // optional field (if you added)
-      showSlideCounter: (r as any).showSlideCounter ?? true,
+      showSlideCounter: (r as PlayerRotationSettings & { showSlideCounter?: boolean }).showSlideCounter ?? true,
     } as PlayerRotationSettings;
   }, [bundle?.settings]);
 
@@ -247,7 +247,7 @@ function PlayerContent() {
         // if image mode but empty images -> treat like text
         const safeAnnouncement: Announcement =
           declaredImageMode && uniqueImages.length === 0
-            ? ({ ...a, display_mode: "text" as any } as Announcement)
+            ? ({ ...a, display_mode: "text" } as Announcement)
             : a;
 
         list.push({
@@ -265,7 +265,7 @@ function PlayerContent() {
     // Videos
     (bundle.youtubeVideos || []).forEach((v) => {
       if (!v.is_active) return;
-      if (!inWindow(v as any, _nowForFilter)) return;
+      if (!inWindow(v as unknown as Announcement, _nowForFilter)) return;
 
       list.push({
         id: v.id,
@@ -367,7 +367,12 @@ function PlayerContent() {
 
     const dateKey = dateKeyFormatter.format(nowTR);
     const weekday = nowTR.getDay();
-    const picked = pickSlotsForToday({ dateKey, weekday, templates: b.templates as any, overrides: b.overrides as any });
+    const picked = pickSlotsForToday({
+      dateKey,
+      weekday,
+      templates: (b.templates || []) as { key: "mon_thu" | "fri"; slots: BellSlot[] }[],
+      overrides: (b.overrides || []) as { date: string; slots: BellSlot[] }[]
+    });
     const st = computeNowStatus(nowTR, picked.slots);
     const lessonNum = getCurrentLessonNumber(nowTR, picked.slots);
 
@@ -398,7 +403,7 @@ function PlayerContent() {
       return match ? `${match[1]}-${match[2].toUpperCase()}` : name;
     };
 
-    for (const entry of schedule as any[]) {
+    for (const entry of schedule as { day_of_week: number; lesson_number: number; class_name: string; teacher_name: string }[]) {
       if (entry.day_of_week && entry.lesson_number && entry.class_name) {
         const key = `${entry.day_of_week}-${entry.lesson_number}`;
         let classMap = index.get(key);
@@ -516,7 +521,7 @@ function PlayerContent() {
                 onVideoEnded={handleVideoEndedGuarded}
                 videoMaxSeconds={clampNumber(rotation.videoSeconds, 30, 1, 60 * 60)}
                 imageSeconds={clampNumber(rotation.imageSeconds, 3, 1, 60 * 60)}
-                showSlideCounter={(rotation as any).showSlideCounter ?? true}
+                showSlideCounter={(rotation as PlayerRotationSettings & { showSlideCounter?: boolean }).showSlideCounter ?? true}
                 // Görseller fail olursa kitlenmesin: bunu force geçiyoruz (rotation kapalı olsa bile)
                 onSlideShowEmptyOrFail={() => handleNext({ force: true })}
               />
