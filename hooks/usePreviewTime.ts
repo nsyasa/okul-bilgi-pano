@@ -90,7 +90,8 @@ export function usePreviewTime(): PreviewState {
     // Calculate effective now
     const effectiveNow = useMemo(() => {
         if (!previewAt || !previewStartReal) {
-            return new Date();
+            // ⚡ Bolt: Bind the fallback "now" directly to realNow to create a centralized clock source
+            return new Date(realNow);
         }
 
         if (previewMode === "freeze") {

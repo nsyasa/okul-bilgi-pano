@@ -159,10 +159,9 @@ function PlayerContent() {
   const preview = usePreviewTime();
 
   const [mounted, setMounted] = useState(false);
-  const [realNow, setRealNow] = useState(() => new Date());
 
-  // Effective time
-  const now = preview.isActive ? preview.effectiveNow : realNow;
+  // ⚡ Bolt: Use centralized clock from usePreviewTime to prevent redundant intervals
+  const now = preview.effectiveNow;
   const nowTR = useMemo(() => new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" })), [now]);
 
   // minute-granularity
@@ -180,7 +179,6 @@ function PlayerContent() {
   );
 
   useEffect(() => setMounted(true), []);
-  useInterval(() => setRealNow(new Date()), 1000);
 
   useEffect(() => {
     fetchWeatherNow().then(setWeather).catch(() => { });
