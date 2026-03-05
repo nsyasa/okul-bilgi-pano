@@ -216,22 +216,25 @@ function SpecialDatesInner({ profile }: { profile: Profile }) {
                             onClick={() => toggleActive(item)}
                             className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${item.is_active ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" : "bg-white/5 text-white/30 hover:bg-white/10"}`}
                             title={item.is_active ? "Pasif Yap" : "Aktif Yap"}
+                            aria-label={item.is_active ? "Pasif Yap" : "Aktif Yap"}
                         >
-                            {item.is_active ? "✓" : "○"}
+                            <span aria-hidden="true">{item.is_active ? "✓" : "○"}</span>
                         </button>
                         <button
                             onClick={() => edit(item)}
                             className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/5 text-white/60 hover:bg-white/20 hover:text-white transition-colors"
                             title="Düzenle"
+                            aria-label="Düzenle"
                         >
-                            ✎
+                            <span aria-hidden="true">✎</span>
                         </button>
                         <button
                             onClick={() => del(item)}
                             className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500/5 text-red-400/50 hover:bg-red-500/20 hover:text-red-400 transition-colors"
                             title="Sil"
+                            aria-label="Sil"
                         >
-                            🗑
+                            <span aria-hidden="true">🗑</span>
                         </button>
                     </div>
                 </div>

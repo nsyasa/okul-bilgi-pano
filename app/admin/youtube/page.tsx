@@ -185,15 +185,17 @@ function YouTubeInner({ profile }: { profile: Profile }) {
                       onClick={() => setEditing(v)}
                       className="w-9 h-9 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
                       title="Düzenle"
+                      aria-label="Düzenle"
                     >
-                      ✎
+                      <span aria-hidden="true">✎</span>
                     </button>
                     <button
                       onClick={() => del(v.id)}
                       className="w-9 h-9 rounded-lg bg-red-500/5 text-red-400/50 hover:bg-red-500/15 hover:text-red-400 flex items-center justify-center transition-colors"
                       title="Sil"
+                      aria-label="Sil"
                     >
-                      🗑
+                      <span aria-hidden="true">🗑</span>
                     </button>
                   </div>
                 </div>
@@ -218,8 +220,9 @@ function YouTubeInner({ profile }: { profile: Profile }) {
               <button
                 onClick={() => setEditing(null)}
                 className="w-8 h-8 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
+                aria-label="Kapat"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
