@@ -29,28 +29,21 @@ const syncFormatter = new Intl.DateTimeFormat("tr-TR", {
 
 export function HeaderBar(props: { now: Date; isOffline: boolean; lastSyncAt: number | null; settings?: PlayerSettings }) {
   const [mounted, setMounted] = useState(false);
-  // ✅ Hydration fix: zamanı sadece client'ta üret (SSR'da null)
-  const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
     setMounted(true);
-    // İlk client render'da set et
-    setNow(new Date());
-
-    // Her saniye güncelle
-    const t = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(t);
   }, []);
 
+  // ⚡ Bolt: Use props.now to sync directly with parent clock and avoid duplicate timer intervals
   const timeStr = useMemo(() => {
-    if (!now) return "—";
-    return timeFormatter.format(now);
-  }, [now]);
+    if (!mounted || !props.now) return "—";
+    return timeFormatter.format(props.now);
+  }, [props.now, mounted]);
 
   const dateStr = useMemo(() => {
-    if (!now) return "—";
-    return dateFormatter.format(now);
-  }, [now]);
+    if (!mounted || !props.now) return "—";
+    return dateFormatter.format(props.now);
+  }, [props.now, mounted]);
 
   const syncStr = useMemo(() => {
     if (!props.lastSyncAt) return null;
