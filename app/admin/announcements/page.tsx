@@ -412,7 +412,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                 title={isActive ? "Yayından Kaldır" : "Yayına Al"}
                 aria-label={isActive ? "Yayından Kaldır" : "Yayına Al"}
               >
-                {isActive ? "⏸" : "▶"}
+                <span aria-hidden="true">{isActive ? "⏸" : "▶"}</span>
               </button>
 
               {/* Düzenle */}
@@ -422,7 +422,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                 title="Düzenle"
                 aria-label="Düzenle"
               >
-                ✎
+                <span aria-hidden="true">✎</span>
               </button>
 
               {/* Sil */}
@@ -432,7 +432,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
                 title="Sil"
                 aria-label="Sil"
               >
-                🗑
+                <span aria-hidden="true">🗑</span>
               </button>
             </div>
           </div>
@@ -643,7 +643,7 @@ function AnnouncementsInner({ profile }: { profile: Profile }) {
               <h2 className="text-white text-xl font-bold">
                 {editingVideo.id ? "Video Düzenle" : "Yeni Video"}
               </h2>
-              <button onClick={() => setEditingVideo(null)} className="text-white/40 hover:text-white text-xl" aria-label="Kapat">×</button>
+              <button onClick={() => setEditingVideo(null)} className="text-white/40 hover:text-white text-xl" aria-label="Kapat"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className="space-y-4">

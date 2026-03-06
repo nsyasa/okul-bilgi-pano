@@ -9,7 +9,6 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { Announcement, PlayerRotationSettings, YouTubeVideo } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import { toast } from "react-hot-toast";
-import type { Profile } from "@/lib/adminAuth";
 
 export default function FlowPage() {
     return <AuthGate>{(profile) => <FlowInner profile={profile} />}</AuthGate>;

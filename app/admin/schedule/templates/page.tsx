@@ -9,7 +9,6 @@ import type { BellSlot } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import { JsonSlotsEditor } from "@/components/admin/JsonSlotsEditor";
 import { PrimaryButton } from "@/components/admin/FormBits";
-import type { Profile } from "@/lib/adminAuth";
 
 type TemplateRow = { id: string; key: "mon_thu" | "fri"; slots: BellSlot[] };
 

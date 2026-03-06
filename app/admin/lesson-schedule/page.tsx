@@ -10,7 +10,6 @@ import toast from "react-hot-toast";
 import type { LessonScheduleEntry } from "@/types/player";
 import type { Profile } from "@/lib/adminAuth";
 import * as XLSX from "xlsx";
-import type { Profile } from "@/lib/adminAuth";
 
 const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
