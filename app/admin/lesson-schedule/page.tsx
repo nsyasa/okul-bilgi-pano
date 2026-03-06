@@ -1,5 +1,6 @@
 "use client";
 
+import type { Profile } from "@/lib/adminAuth";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -8,9 +9,7 @@ import { FieldLabel, PrimaryButton, SecondaryButton } from "@/components/admin/F
 import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 import toast from "react-hot-toast";
 import type { LessonScheduleEntry } from "@/types/player";
-import type { Profile } from "@/lib/adminAuth";
 import * as XLSX from "xlsx";
-import type { Profile } from "@/lib/adminAuth";
 
 const DAYS = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];

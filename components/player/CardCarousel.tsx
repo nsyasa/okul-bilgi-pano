@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BRAND } from "@/lib/branding";
 import type { Announcement, EventItem, SchoolInfo, YouTubeVideo } from "@/types/player";
 import { loadYouTubeIframeApi, type YTPlayer } from "@/lib/youtubeIframeApi";
@@ -281,7 +281,8 @@ function YouTubeEmbed({
   return <div ref={containerRef} className="absolute inset-0 h-full w-full bg-black/50" />;
 }
 
-export function CardCarousel(props: {
+// ⚡ Bolt: Wrap with React.memo to prevent unnecessary re-renders when parent ticks
+export const CardCarousel = memo(function CardCarousel(props: {
   cards: ReturnType<typeof buildCards>;
   index: number;
   onVideoEnded?: () => void;
@@ -483,4 +484,4 @@ export function CardCarousel(props: {
       )}
     </div>
   );
-}
+});

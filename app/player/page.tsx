@@ -167,6 +167,10 @@ function PlayerContent() {
   // minute-granularity
   const minuteTick = useMemo(() => Math.floor(nowTR.getTime() / 60000), [nowTR]);
 
+  // ⚡ Bolt: Extract exact minute boundaries to avoid triggering second-level re-renders on components
+  const realMinuteTick = Math.floor(now.getTime() / 60000);
+  const minuteDate = useMemo(() => new Date(realMinuteTick * 60000), [realMinuteTick]);
+
   const [weather, setWeather] = useState<WeatherNow | null>(null);
 
   // current playlist position by id
@@ -418,9 +422,10 @@ function PlayerContent() {
     return index;
   }, [bundle?.lessonSchedule]);
 
+  // ⚡ Bolt: Extract weekday to avoid depending on nowTR (which changes every second)
+  const weekday = nowTR.getDay();
   const currentClasses = useMemo(() => {
     const lessonNum = statusData.currentLessonNumber;
-    const weekday = nowTR.getDay();
 
     let teacherMap: Map<string, string> | undefined;
     if (lessonNum && weekday >= 1 && weekday <= 5) {
@@ -432,7 +437,10 @@ function PlayerContent() {
       class_name: className,
       teacher_name: teacherMap?.get(className) || "",
     }));
-  }, [statusData.currentLessonNumber, nowTR, scheduleIndex, ALL_CLASSES]);
+  }, [statusData.currentLessonNumber, weekday, scheduleIndex, ALL_CLASSES]);
+
+  // ⚡ Bolt: Memoize inline callbacks to avoid breaking React.memo
+  const handleSlideShowEmptyOrFail = useCallback(() => handleNext({ force: true }), [handleNext]);
 
   // Cards for CardCarousel (single item display)
   const currentCardList = useMemo(() => {
@@ -523,7 +531,7 @@ function PlayerContent() {
                 imageSeconds={clampNumber(rotation.imageSeconds, 3, 1, 60 * 60)}
                 showSlideCounter={(rotation as PlayerRotationSettings & { showSlideCounter?: boolean }).showSlideCounter ?? true}
                 // Görseller fail olursa kitlenmesin: bunu force geçiyoruz (rotation kapalı olsa bile)
-                onSlideShowEmptyOrFail={() => handleNext({ force: true })}
+                onSlideShowEmptyOrFail={handleSlideShowEmptyOrFail}
               />
             ) : (
               <div className="h-full flex items-center justify-center text-white/30 flex-col gap-2">
@@ -585,7 +593,7 @@ function PlayerContent() {
         <div className={`${PLAYER_LAYOUT.sidePadding} ${PLAYER_LAYOUT.bottomPadding}`}>
           <TickerBar
             ticker={combinedTicker}
-            now={now}
+            now={minuteDate}
             isAlert={bundle?.announcements.some((a: Announcement) => a.category === "sensitive")}
             settings={bundle?.settings}
           />

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Profile } from "@/lib/adminAuth";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 // Last Sync: 2026-02-10 20:25 (Unified Flow Update)
@@ -7,9 +8,7 @@ import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { Announcement, PlayerRotationSettings, YouTubeVideo } from "@/types/player";
-import type { Profile } from "@/lib/adminAuth";
 import { toast } from "react-hot-toast";
-import type { Profile } from "@/lib/adminAuth";
 
 export default function FlowPage() {
     return <AuthGate>{(profile) => <FlowInner profile={profile} />}</AuthGate>;
