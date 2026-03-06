@@ -142,7 +142,7 @@ function TickerInner({ profile }: { profile: Profile }) {
                     }`}
                   title={t.is_active ? "Pasif Yap" : "Aktif Yap"}
                 >
-                  {t.is_active ? "✓" : "○"}
+                  <span aria-hidden="true">{t.is_active ? "✓" : "○"}</span>
                 </button>
 
                 {/* Content */}
@@ -173,7 +173,7 @@ function TickerInner({ profile }: { profile: Profile }) {
                     title="Düzenle"
                     aria-label="Düzenle"
                   >
-                    ✎
+                    <span aria-hidden="true">✎</span>
                   </button>
                   <button
                     onClick={() => del(t.id)}
@@ -181,7 +181,7 @@ function TickerInner({ profile }: { profile: Profile }) {
                     title="Sil"
                     aria-label="Sil"
                   >
-                    🗑
+                    <span aria-hidden="true">🗑</span>
                   </button>
                 </div>
               </div>
@@ -207,7 +207,7 @@ function TickerInner({ profile }: { profile: Profile }) {
                 className="w-8 h-8 rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white flex items-center justify-center transition-colors"
                 aria-label="Kapat"
               >
-                ✕
+                <span aria-hidden="true">✕</span>
               </button>
             </div>
 
