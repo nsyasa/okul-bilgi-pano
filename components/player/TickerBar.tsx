@@ -2,6 +2,7 @@
 
 import { BRAND } from "@/lib/branding";
 import type { TickerItem, PlayerSettings } from "@/types/player";
+import { memo } from "react";
 
 function isInWindow(item: TickerItem, now: Date) {
   const t = now.getTime();
@@ -12,7 +13,8 @@ function isInWindow(item: TickerItem, now: Date) {
   return true;
 }
 
-export function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: boolean; settings?: PlayerSettings }) {
+// ⚡ Bolt: Wrap with React.memo to prevent unnecessary re-renders when parent ticks
+export const TickerBar = memo(function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: boolean; settings?: PlayerSettings }) {
   const items = (props.ticker ?? [])
     .filter((x) => x.is_active)
     .filter((x) => isInWindow(x, props.now))
@@ -44,4 +46,4 @@ export function TickerBar(props: { ticker: TickerItem[]; now: Date; isAlert?: bo
       `}</style>
     </div>
   );
-}
+});

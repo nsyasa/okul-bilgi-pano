@@ -1,15 +1,14 @@
 "use client";
 
+import type { Profile } from "@/lib/adminAuth";
 import { useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { BRAND } from "@/lib/branding";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { BellSlot } from "@/types/player";
-import type { Profile } from "@/lib/adminAuth";
 import { JsonSlotsEditor } from "@/components/admin/JsonSlotsEditor";
 import { PrimaryButton } from "@/components/admin/FormBits";
-import type { Profile } from "@/lib/adminAuth";
 
 type TemplateRow = { id: string; key: "mon_thu" | "fri"; slots: BellSlot[] };
 

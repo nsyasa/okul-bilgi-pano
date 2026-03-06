@@ -3,8 +3,10 @@
 import { BRAND } from "@/lib/branding";
 import { formatCountdown } from "@/lib/schedule";
 import type { DutyTeacher, WeatherNow, SpecialDate } from "@/types/player";
+import { memo } from "react";
 
-export function LeftPanel(props: {
+// ⚡ Bolt: Wrap with React.memo to prevent unnecessary re-renders when parent ticks
+export const LeftPanel = memo(function LeftPanel(props: {
   state: "closed" | "lesson" | "break" | "lunch";
   nextInSec: number | null;
   nextLabel: string | null;
@@ -166,4 +168,4 @@ export function LeftPanel(props: {
       </div>
     </div>
   );
-}
+});

@@ -1,15 +1,14 @@
 "use client";
 
+import type { Profile } from "@/lib/adminAuth";
 import { useEffect, useMemo, useState } from "react";
 import { AuthGate } from "@/components/admin/AuthGate";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { TickerItem } from "@/types/player";
-import type { Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import { ConfirmDialog } from "@/components/admin/ui/ConfirmDialog";
 import toast from "react-hot-toast";
-import type { Profile } from "@/lib/adminAuth";
 
 type Form = Partial<TickerItem> & { id?: string };
 
