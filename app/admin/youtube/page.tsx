@@ -8,6 +8,9 @@ import type { YouTubeVideo } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import type { Profile } from "@/lib/adminAuth";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const trFormatter = new Intl.DateTimeFormat("tr-TR");
+
 type Form = Partial<YouTubeVideo> & { id?: string };
 
 export default function YouTubePage() {
@@ -167,7 +170,7 @@ function YouTubeInner({ profile }: { profile: Profile }) {
                   </div>
                   <div className="text-[11px] text-white/30 flex items-center gap-2">
                     <span>Öncelik: {v.priority}</span>
-                    {v.start_at && <span>• {new Date(v.start_at).toLocaleDateString("tr-TR")}</span>}
+                    {v.start_at && <span>• {trFormatter.format(new Date(v.start_at))}</span>}
                   </div>
 
                   {/* Actions */}

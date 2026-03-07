@@ -10,6 +10,10 @@ import type { BellSlot } from "@/types/player";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import { ymdNowTR } from "@/lib/validate";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const shortDateFormatter = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" });
+const weekdayFormatter = new Intl.DateTimeFormat("tr-TR", { weekday: "long" });
+
 type OverrideRow = { id: string; date: string; slots: BellSlot[]; note: string | null };
 
 const DEFAULT_EXAMPLE_SLOTS: BellSlot[] = [
@@ -309,9 +313,9 @@ function OverridesInner({ profile }: { profile: Profile }) {
                   <div className="flex items-start justify-between relative z-10">
                     <div className="flex-1 min-w-0">
                       <div className={`font-mono font-bold text-xl leading-none mb-1.5 ${new Date(r.date) < new Date(ymdNowTR()) ? 'text-white/40' : 'text-brand'}`}>
-                        {new Date(r.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                        {shortDateFormatter.format(new Date(r.date))}
                       </div>
-                      <div className="text-xs text-white/30 font-mono mb-3">{new Date(r.date).toLocaleDateString('tr-TR', { weekday: 'long' })} • {r.date}</div>
+                      <div className="text-xs text-white/30 font-mono mb-3">{weekdayFormatter.format(new Date(r.date))} • {r.date}</div>
 
                       <div className="text-white text-sm font-medium line-clamp-2 mb-2 leading-snug">{r.note || <span className="opacity-50 italic">İsimsiz</span>}</div>
 

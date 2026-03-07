@@ -5,3 +5,7 @@
 ## 2026-03-06 - [Preventing Clock-Driven Re-Renders]
 **Learning:** A centralized clock updating every second will cause all child components to re-render, creating massive CPU overhead, even for components that only need minute-granularity or don't use the clock directly.
 **Action:** Wrap heavy UI components (like Carousels and Tickers) with `React.memo`, memoize their props using `useCallback`/`useMemo`, and pass rounded time units (e.g., `minuteDate`) to components that don't need second-level precision.
+
+## 2026-03-04 - toLocaleDateString Performance Bottleneck
+**Learning:** Calling `Date.prototype.toLocaleDateString()` inside React render loops implicitly re-instantiates `Intl.DateTimeFormat` on every call, causing a noticeable CPU and memory overhead during list renders in admin panels.
+**Action:** Replace `toLocaleDateString` in lists with a module-scoped, pre-instantiated `Intl.DateTimeFormat` object.

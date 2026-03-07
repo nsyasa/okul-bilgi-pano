@@ -9,6 +9,9 @@ import { type Profile } from "@/lib/adminAuth";
 import { FieldLabel, PrimaryButton, SecondaryButton, TextInput } from "@/components/admin/FormBits";
 import { ymdNowTR } from "@/lib/validate";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const shortDateFormatter = new Intl.DateTimeFormat("tr-TR", { day: "numeric", month: "short" });
+
 const TYPE_OPTIONS: { value: SpecialDate["type"]; label: string; color: string }[] = [
     { value: "holiday", label: "Tatil", color: "bg-red-500" },
     { value: "special_week", label: "Özel Hafta", color: "bg-purple-500" },
@@ -198,9 +201,9 @@ function SpecialDatesInner({ profile }: { profile: Profile }) {
                                 {typeInfo.label}
                             </span>
                             <span className="font-mono">
-                                {new Date(item.start_date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}
+                                {shortDateFormatter.format(new Date(item.start_date))}
                                 {item.end_date && item.end_date !== item.start_date && (
-                                    <> — {new Date(item.end_date).toLocaleDateString("tr-TR", { day: "numeric", month: "short" })}</>
+                                    <> — {shortDateFormatter.format(new Date(item.end_date))}</>
                                 )}
                             </span>
                         </div>
