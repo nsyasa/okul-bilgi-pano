@@ -10,6 +10,9 @@ import { supabaseBrowser } from "@/lib/supabaseBrowser";
 import type { Announcement, PlayerRotationSettings, YouTubeVideo } from "@/types/player";
 import { toast } from "react-hot-toast";
 
+// ⚡ Bolt: Cache Intl.DateTimeFormat instances to prevent expensive re-instantiation
+const trFormatter = new Intl.DateTimeFormat("tr-TR");
+
 export default function FlowPage() {
     return <AuthGate>{(profile) => <FlowInner profile={profile} />}</AuthGate>;
 }
@@ -497,7 +500,7 @@ function FlowListItem({ item, index, total, onMove, onToggle, onDelete, rotation
                     <div className="text-xs text-white/40 flex items-center gap-3">
                         <span className="bg-white/5 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider">{item.type_label}</span>
                         <span className="flex items-center gap-1">⏱️ {duration}sn</span>
-                        <span className="hidden sm:inline">• {new Date(item.created_at).toLocaleDateString("tr-TR")}</span>
+                        <span className="hidden sm:inline">• {trFormatter.format(new Date(item.created_at))}</span>
                     </div>
                 </div>
             </div>
