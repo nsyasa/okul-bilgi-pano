@@ -2,11 +2,22 @@
 > okul-pano-player@0.1.0 dev /app
 > next dev
 
+ ⚠ Port 3000 is in use, trying 3001 instead.
+ ⚠ Port 3001 is in use, trying 3002 instead.
   ▲ Next.js 14.2.35
-  - Local:        http://localhost:3000
+  - Local:        http://localhost:3002
+  - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 1815ms
- ○ Compiling /player ...
- ✓ Compiled /player in 5.7s (617 modules)
- GET /player?debug=1 200 in 6246ms
+ ✓ Ready in 3.6s
+ ○ Compiling /admin/school-info ...
+ ✓ Compiled /admin/school-info in 6.3s (621 modules)
+ GET /admin/school-info 200 in 6903ms
+ ✓ Compiled in 4.4s (621 modules)
+ 4.9s (621 modules)
+ ✓ Compiled /_not-found in 255ms (610 modules)
+ GET /admin/school-info 404 in 421ms
+ GET /_next/static/css/app/layout.css?v=1772857342355 404 in 37ms
+ GET /_next/static/chunks/main-app.js?v=1772857342355 404 in 47ms
+ GET /_next/static/chunks/app-pages-internals.js 404 in 46ms
+ ✓ Compiled in 895ms (621 modules)
